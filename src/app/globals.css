@@ -1,0 +1,213 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html, body {
+    height: 100%; /* Ensure html and body take full height */
+    margin: 0;
+    padding: 0;
+  }
+  body {
+    display: flex; /* Make body a flex container */
+    flex-direction: column; /* Stack children vertically */
+    min-height: 100vh; /* Ensure body is at least viewport height */
+  }
+
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+    --primary: 240 5.9% 10%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 240 5.9% 10%;
+    --radius: 0.5rem;
+
+    /* Custom Figma colors */
+    --figma-bg: 0 0% 100%; /* #FFFFFF */
+    --figma-sidebar-bg: 240 4.8% 97.3%; /* #F8F8F8 */
+    --figma-light-gray: 0 0% 87.8%; /* #E0E0E0 */
+    --figma-dark-blue: 218 23% 22.2%; /* #2D3748 */
+    --figma-orange: 24 95% 53.1%; /* #F97316 */
+    --figma-text-dark: 0 0% 20%; /* #333333 */
+    --figma-text-gray: 0 0% 40%; /* #666666 */ --sidebar-background: 0 0% 98%; --sidebar-foreground: 240 5.3% 26.1%; --sidebar-primary: 240 5.9% 10%; --sidebar-primary-foreground: 0 0% 98%; --sidebar-accent: 240 4.8% 95.9%; --sidebar-accent-foreground: 240 5.9% 10%; --sidebar-border: 220 13% 91%; --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 240 5.9% 10%;
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 240 4.9% 83.9%;
+
+    /* Custom Figma colors for dark mode (adjust as needed) */
+    --figma-bg: 240 10% 3.9%; /* Darker background for dark mode */
+    --figma-sidebar-bg: 240 5.9% 10%; /* Darker sidebar */
+    --figma-light-gray: 240 3.7% 15.9%; /* Darker light gray */
+    --figma-dark-blue: 218 23% 22.2%; /* Keep same or adjust for contrast */
+    --figma-orange: 24 95% 53.1%; /* Keep same */
+    --figma-text-dark: 0 0% 98%; /* White text */
+    --figma-text-gray: 240 5% 64.9%; /* Lighter gray text */ --sidebar-background: 240 5.9% 10%; --sidebar-foreground: 240 4.8% 95.9%; --sidebar-primary: 224.3 76.3% 48%; --sidebar-primary-foreground: 0 0% 100%; --sidebar-accent: 240 3.7% 15.9%; --sidebar-accent-foreground: 240 4.8% 95.9%; --sidebar-border: 240 3.7% 15.9%; --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+.font-dm {
+  font-family: "DM Sans", sans-serif;
+
+}
+
+.font-inter{
+  font-family: "Inter", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: <weight>;
+  font-style: normal;
+}
+
+@layer utilities {
+  .animate-spin-slow {
+    animation: spin 3s linear infinite;
+  }
+}
+
+
+.section-gap {
+  padding-top: 2rem;
+  padding-bottom: 2rem;
+}
+
+
+.admin-menu .ant-menu-item-selected {
+  background-color: #1C2A47 !important; /* custom orange */
+  color: #fff !important; /* white text */
+  border-radius: 6px; /* optional rounded look */
+}
+
+.admin-menu .ant-menu-item-selected .ant-menu-title-content {
+  color: #fff !important;
+}
+
+/* Small screens (sm) */
+@media (min-width: 640px) {
+  .section-gap {
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+  }
+}
+
+/* Medium screens (md) */
+@media (min-width: 768px) {
+  .section-gap {
+    padding-top: 3rem;
+    padding-bottom: 3rem;
+  }
+}
+
+/* Large screens (lg) */
+@media (min-width: 1024px) {
+  .section-gap {
+    padding-top: 4rem;
+    padding-bottom: 4rem;
+  }
+}
+
+/* Extra-large screens (xl) */
+@media (min-width: 1280px) {
+  .section-gap {
+    padding-top: 5rem;
+    padding-bottom: 5rem;
+  }
+}
+
+/* 2X Large screens (2xl) */
+@media (min-width: 1536px) {
+  .section-gap {
+    padding-top: 6rem;
+    padding-bottom: 6rem;
+  }
+}
+
+.container {
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+/* Small screens (sm) */
+@media (min-width: 640px) {
+  .container {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
+/* Medium screens (md) */
+@media (min-width: 768px) {
+  .container {
+    padding-right: 0.5rem;
+    padding-left: 0.5rem;
+  }
+}
+
+/* Large screens (lg) */
+@media (min-width: 1024px) {
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+
+/* Extra-large screens (xl) */
+@media (min-width: 1280px) {
+  .container {
+    padding-left: 100px;
+    padding-right: 100px;
+  }
+}
+
+/* 2X Large screens (2xl) */
+@media (min-width: 1536px) {
+  .container {
+    padding-left: 4px;
+    padding-right: 4px;
+  }
+}
+
+
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
