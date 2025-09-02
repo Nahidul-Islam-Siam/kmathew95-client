@@ -2,7 +2,7 @@ import { MonitorPlay, LayoutGrid, HandCoins, Headphones } from "lucide-react";
 import FeatureCard from "./FeaturedCard";
 import TextArea from "antd/es/input/TextArea";
 import { Button } from "@/components/ui/button";
-
+ 
 
 export default function FeatureSection() {
   const features = [

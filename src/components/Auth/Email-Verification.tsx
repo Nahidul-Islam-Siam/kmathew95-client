@@ -4,6 +4,7 @@ import Image from "next/image";
 import React, { useState, FormEvent } from "react";
 // Replace this import path with your actual OTP illustration image path
 import otpImg from "@/assets/img/Email campaign-rafiki 1.png";
+import Link from "next/link";
 
 const EmailVerification = () => {
   const [otp, setOtp] = useState("");
@@ -17,7 +18,7 @@ const EmailVerification = () => {
 
     if (!otp.trim()) return;
 
-    setIsSubmitting(true);
+    setIsSubmitting(true);   
 
     try {
       // Replace this with your actual verification logic
@@ -37,6 +38,8 @@ const EmailVerification = () => {
         {/* Left side - Illustration */}
         <div className="hidden lg:flex justify-center">
           <div className="relative w-full max-w-md">
+<Link href="/">
+
             <Image
               src={otpImg}
               alt="Forgot password illustration showing a person next to a computer screen"
@@ -45,6 +48,7 @@ const EmailVerification = () => {
               className="w-full h-auto"
               priority
             />
+</Link>
           </div>
         </div>
 

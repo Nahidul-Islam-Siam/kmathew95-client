@@ -16,6 +16,9 @@ import { UserOutlined } from "@ant-design/icons";
 import { useDispatch, useSelector } from "react-redux";
 import { logout } from "@/redux/features/auth";
 import type { RootState } from "@/redux/store";
+import { useGetSubCategoryQuery } from "@/redux/service/admin/category";
+import { useEffect, useState } from "react";
+import { useGetUserQuery } from "@/redux/service/userApi";
 
 const ForPc = () => {
   const pathname = usePathname();
@@ -25,51 +28,61 @@ const ForPc = () => {
     dispatch(logout());
   };
 
-  // ✅ Get role from Redux
+  // ✅ Auth state
   const role = useSelector((state: RootState) => state.auth.user?.role);
+  const isAuthenticated = useSelector((state: RootState) => !!state.auth.accessToken);
 
-  // ✅ Get auth status
-  const sign = useSelector((state: any) => state.auth.accessToken);
+  // ✅ Fetch logged-in user data
+  const { data: userApiData } = useGetUserQuery(undefined, {
+    skip: !isAuthenticated,
+  });
 
-  const categories = [
-    {
-      title: "Home Services",
-      items: [
-        { name: "Roofing", href: "/categories/roofing" },
-        { name: "Siding", href: "/categories/siding" },
-        { name: "Windows", href: "/categories/windows" },
-        { name: "Gutters", href: "/categories/gutters" },
-      ],
-    },
-    {
-      title: "Commercial Services",
-      items: [
-        { name: "Commercial Roofing", href: "/categories/commercial-roofing" },
-        { name: "Building Maintenance", href: "/categories/maintenance" },
-        { name: "Property Management", href: "/categories/property" },
-        { name: "Emergency Services", href: "/categories/emergency" },
-      ],
-    },
-    {
-      title: "Specialized Services",
-      items: [
-        { name: "Solar Installation", href: "/categories/solar" },
-        { name: "Insulation", href: "/categories/insulation" },
-        { name: "Waterproofing", href: "/categories/waterproofing" },
-        { name: "HVAC", href: "/categories/hvac" },
-      ],
-    },
-    {
-      title: "Popular Services",
-      items: [
-        { name: "Roof Inspection", href: "/categories/inspection" },
-        { name: "Storm Damage", href: "/categories/storm-damage" },
-        { name: "Maintenance Plans", href: "/categories/maintenance-plans" },
-        { name: "Free Estimates", href: "/categories/estimates" },
-      ],
-    },
-  ];
+  // ✅ Fetch subcategories
+  const { data: subCategoryData, isLoading } = useGetSubCategoryQuery();
 
+  // State: grouped categories
+  const [groupedCategories, setGroupedCategories] = useState<
+    { categoryId: string; categoryName: string; subcategories: Array<{ id: string; name: string; href: string }> }[]
+  >([]);
+
+  // Group subcategories and create query-param-based href
+  useEffect(() => {
+    if (subCategoryData?.data?.data) {
+      const subcategories = subCategoryData.data.data;
+      const groupMap = new Map<string, { categoryId: string; categoryName: string; subcategories: any[] }>();
+
+      subcategories.forEach((sub: any) => {
+        const categoryId = sub.categoryId;
+        const categoryName = sub.category?.name || "Other Services";
+
+        if (!groupMap.has(categoryId)) {
+          groupMap.set(categoryId, {
+            categoryId,
+            categoryName,
+            subcategories: [],
+          });
+        }
+
+        // ✅ Create URL with encoded category name: "Wireframing & Prototyping" → query param
+        const encodedCategory = encodeURIComponent(sub.name); // Handles & → %26, spaces → +
+        const href = `/all-services?category=${encodedCategory}`;
+
+        groupMap.get(categoryId)?.subcategories.push({
+          id: sub.id,
+          name: sub.name,
+          href,
+        });
+      });
+
+      const groupedArray = Array.from(groupMap.values()).sort((a, b) =>
+        a.categoryName.localeCompare(b.categoryName)
+      );
+
+      setGroupedCategories(groupedArray);
+    }
+  }, [subCategoryData]);
+
+  // === Nav Links with active logic ===
   const navLinks = [
     { href: "/", label: "Home" },
     { href: "/all-services", label: "Browse Tasks" },
@@ -77,19 +90,19 @@ const ForPc = () => {
     { href: "/contact-us", label: "Contact" },
   ];
 
+  // Helper to determine active state (for top nav)
+  const isActive = (href: string) => {
+    if (href === "/") return pathname === "/";
+    return pathname === href || pathname.startsWith(href);
+  };
+
   return (
     <div className="bg-[#1C2A47] z-50 w-full shadow-md fixed top-0">
       <div className="container mx-auto hidden lg:flex py-0 items-center justify-between h-16 px-4">
         {/* Logo */}
         <Link href="/">
           <div className="relative w-10 h-10 bg-orange-500 rounded-full overflow-hidden cursor-pointer">
-            <Image
-              src="/logo.jpg"
-              alt="Company Logo"
-              fill
-              className="object-cover"
-              priority
-            />
+            <Image src="/logo.jpg" alt="Company Logo" fill className="object-cover" priority />
           </div>
         </Link>
 
@@ -101,7 +114,7 @@ const ForPc = () => {
                 <Button
                   variant="ghost"
                   className={`h-auto p-0 hover:bg-transparent text-[15px] ${
-                    pathname === link.href
+                    isActive(link.href)
                       ? "text-orange-400 font-semibold"
                       : "text-white hover:text-orange-300"
                   }`}
@@ -124,37 +137,47 @@ const ForPc = () => {
                 <ChevronDown className="ml-1 h-3 w-3" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-[800px] p-6 bg-white rounded-lg shadow-lg border">
-              <div className="grid grid-cols-4 gap-6">
-                {categories.map((category, index) => (
-                  <div key={index}>
-                    <h5 className="text-slate-700 mb-3 uppercase tracking-wide text-xs font-semibold">
-                      {category.title}
-                    </h5>
-                    <div className="space-y-2">
-                      {category.items.map((item, i) => (
-                        <Link
-                          key={i}
-                          href={item.href}
-                          className={`block p-3 rounded-md transition-colors duration-200 no-underline ${
-                            pathname === item.href
-                              ? "bg-orange-100 text-orange-600 font-semibold"
-                              : "hover:bg-gray-50"
-                          }`}
-                        >
-                          <div className="text-sm font-medium">{item.name}</div>
-                        </Link>
-                      ))}
+            <DropdownMenuContent
+              className="w-[800px] p-6 bg-white rounded-lg shadow-lg border max-h-96 overflow-y-auto"
+              align="start"
+            >
+              {isLoading ? (
+                <p className="text-gray-500">Loading services...</p>
+              ) : groupedCategories.length === 0 ? (
+                <p className="text-gray-500">No services available</p>
+              ) : (
+                <div className="grid grid-cols-4 gap-6">
+                  {groupedCategories.map((group) => (
+                    <div key={group.categoryId}>
+                      <h5 className="text-slate-700 mb-3 uppercase tracking-wide text-xs font-semibold">
+                        {group.categoryName}
+                      </h5>
+                      <div className="space-y-2">
+                        {group.subcategories.map((sub) => (
+                          <Link
+                            key={sub.id}
+                            href={sub.href} // ✅ e.g., /all-services?category=Wireframing+%26+Prototyping
+                            className={`block p-3 rounded-md transition-colors duration-200 no-underline ${
+                              pathname === "/all-services" &&
+                              new URLSearchParams(window.location.search).get("category") === sub.name
+                                ? "bg-orange-100 text-orange-600 font-semibold"
+                                : "hover:bg-gray-50"
+                            }`}
+                          >
+                            <div className="text-sm font-medium">{sub.name}</div>
+                          </Link>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
               <div className="mt-6 pt-4 border-t border-gray-200">
                 <Link
-                  href="/categories"
+                  href="/all-services"
                   className="text-sm text-orange-600 hover:text-orange-700 font-medium"
                 >
-                  View all categories →
+                  View all services →
                 </Link>
               </div>
             </DropdownMenuContent>
@@ -170,7 +193,7 @@ const ForPc = () => {
                   : "text-white hover:text-orange-300"
               }`}
             >
-              Other Services
+              All Traders
             </Button>
           </Link>
           <Link href="/post-task">
@@ -185,62 +208,53 @@ const ForPc = () => {
               Post a Task
             </Button>
           </Link>
+
+          {/* Favorite Icon */}
           <Link href="/favorite">
-            <Button
-              variant="ghost"
-              className={`h-auto p-0 hover:bg-transparent align-middle ${
-                pathname === "/favorite"
-                  ? "text-orange-400"
-                  : "text-white hover:text-orange-300"
-              }`}
-            >
-              <Heart className="h-8 w-8" />
-            </Button>
+            <Heart className="h-6 w-6 text-white hover:text-red-300 cursor-pointer" />
           </Link>
 
-          {/* Auth Menu */}
-          {sign ? (
-            <Dropdown
-              menu={{
-                items: [
-                  {
-                    key: "1",
-                    label: <Link href="/profile">My Profile</Link>,
-                  },
-                  {
-                    key: "2",
-                    label: <h1 onClick={handleLogout}>Logout</h1>,
-                  },
-                  {
-                    key: "3",
-                    label: (
-                      <Link
-                        href={
-                          role?.toLowerCase() === "admin"
-                            ? "/admin"
-                            : "/dashboard"
-                        }
-                      >
-                        Dashboard
-                      </Link>
-                    ),
-                  },
-                ],
-              }}
-              placement="bottomRight"
-              arrow
-            >
-              <div className="cursor-pointer">
+          {/* Authenticated User Menu */}
+          {isAuthenticated ? (
+            <div className="flex items-center gap-3">
+              <Dropdown
+                menu={{
+                  items: [
+                    {
+                      key: "1",
+                      label: (
+                        <Link href={role === "ADMIN" ? "/admin/profile" : "/dashboard/profile"}>
+                          My Profile
+                        </Link>
+                      ),
+                    },
+                    {
+                      key: "3",
+                      label: (
+                        <Link href={role === "ADMIN" ? "/admin" : "/dashboard"}>
+                          Dashboard
+                        </Link>
+                      ),
+                    },
+                    {
+                      key: "2",
+                      label: <span onClick={handleLogout}>Logout</span>,
+                    },
+                  ],
+                }}
+                placement="bottomRight"
+                arrow
+              >
                 <Avatar
-                  style={{
-                    backgroundColor: "#E57931",
-                    verticalAlign: "middle",
-                  }}
-                  icon={<UserOutlined />}
+                  src={userApiData?.data?.avatar}
+                  alt="User Avatar"
+                  style={{ backgroundColor: "#E57931" }}
                   size="large"
+                  icon={!userApiData?.data?.avatar ? <UserOutlined /> : null}
+                  className="cursor-pointer"
                 />
-              </div>
-            </Dropdown>
+              </Dropdown>
+            </div>
           ) : (
             <>
               <Link href="/login">

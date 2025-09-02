@@ -26,7 +26,7 @@ export default function LoginPage() {
 
   const router = useRouter();
   const dispatch = useDispatch();
-  const [loginUser] = useLoginUserMutation();
+  const [loginUser] = useLoginUserMutation();   
 
   const {
     register,
@@ -81,6 +81,7 @@ export default function LoginPage() {
       <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-24 items-center">
         {/* Left Side Image */}
         <div className="hidden lg:flex justify-center">
+          <Link href="/">
           <Image
             src={LoginImg}
             alt="Login illustration"
@@ -89,6 +90,7 @@ export default function LoginPage() {
             className="w-full h-auto"
             priority
           />
+          </Link>
         </div>
 
         {/* Right Side Form */}

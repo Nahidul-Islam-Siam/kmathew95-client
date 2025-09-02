@@ -25,7 +25,7 @@ const services = [
     title: "UI Design + Figma + Logo",
     price: "5.00",
     duration: "2 Day",
-    rating: 5.0,
+    rating: 5.0,   
     reviews: 73,
     isPopular: true,
     category: "UI/UX Design",

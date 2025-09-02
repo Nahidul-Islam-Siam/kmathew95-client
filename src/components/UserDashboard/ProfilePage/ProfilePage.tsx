@@ -55,17 +55,17 @@ export default function PricingPage() {
             <MyProfilePage />
           </div>
         )}
-
+{/* 
         {activeTab === "Add-Profile" && (
           <div>
             <AddProfilePage />
           </div>
-        )}
-        {activeTab === "Refer" && (
+        )} */}
+        {/* {activeTab === "Refer" && (
           <div>
            <ProfileRefer />
           </div>
-        )}
+        )} */}
       </div>
     </div>
   );

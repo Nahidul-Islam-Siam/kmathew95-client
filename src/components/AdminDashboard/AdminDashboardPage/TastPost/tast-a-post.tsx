@@ -64,7 +64,7 @@ export default function RecentTradesTable() {
   const [selectedTrade, setSelectedTrade] = useState<Trade | null>(null);
 
   const { data: taskManagementData, isLoading: apiLoading } =
-    useGetTaskManagementQuery();
+    useGetTaskManagementQuery({});
 
   const mapStatus = (status: string): TradeStatus => {
     switch (status) {

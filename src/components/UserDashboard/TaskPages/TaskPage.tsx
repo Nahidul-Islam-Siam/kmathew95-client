@@ -1,24 +1,20 @@
+// app/TaskPage.tsx
 "use client";
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import ManageTask from "./ManageTask";
-import ManageTradersPage from "./ManageTradersPage";  
-import ActiveTask from "./ActiveTask";
-import { useGetCategoryQuery } from "@/redux/service/admin/category";
+import ManageTradersPage from "./ManageTradersPage";
+import MyActiveTaskTab from "./ActiveTask";
+
 
 export default function TaskPage() {
   const [activeTab, setActiveTab] = useState("Manage-Tasks");
 
-
-
-
-
   return (
-    <div className="min-h-screen mt-10 ">
+    <div className="min-h-screen mt-10">
       {/* Header Section */}
-      <div className="container mx-auto px-4  text-center">
-        {/* Tab Navigation */}
+      <div className="container mx-auto px-4 text-center">
         <div className="flex flex-col md:flex-row py-2 justify-center gap-2">
           <Button
             onClick={() => setActiveTab("Manage-Tasks")}
@@ -55,22 +51,9 @@ export default function TaskPage() {
 
       {/* Tab Content */}
       <div className="my-10">
-        {activeTab === "Manage-Tasks" && (
-          <div>
-            <ManageTask />
-          </div>
-        )}
-
-        {activeTab === "manage-trader" && (
-          <div>
-            <ManageTradersPage />
-          </div>
-        )}
-        {activeTab === "my-active-task" && (
-          <div>
-            <ActiveTask />
-          </div>
-        )}
+        {activeTab === "Manage-Tasks" && <ManageTask />}
+        {activeTab === "manage-trader" && <ManageTradersPage />}
+        {activeTab === "my-active-task" && <MyActiveTaskTab />}
       </div>
     </div>
   );

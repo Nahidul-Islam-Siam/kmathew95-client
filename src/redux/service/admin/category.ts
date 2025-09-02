@@ -3,7 +3,7 @@
 import { baseApi } from "@/redux/api/baseApi";
 
 // ======= Types =======
-
+ 
 // Single category 
 export interface CategoryData {
   id: string;

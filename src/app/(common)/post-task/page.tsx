@@ -27,8 +27,7 @@ import { useGetCategoryQuery } from "@/redux/service/admin/category";
 import { useAddTaskManagementMutation } from "@/redux/service/admin/taskManagemant";
 import Image from "next/image";
 import { toast } from "sonner";
-import { RootState } from "@/redux/store";
-import { useSelector } from "react-redux";
+
 import Swal from "sweetalert2";
 import { useGetMeQuery } from "@/redux/service/auth/authApi";
 

@@ -4,7 +4,8 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { Toaster } from "sonner";
 import "./globals.css";
-import FacebookPixel from "@/FacebookPixel";
+import { SocketProvider } from "@/lib/providers/SocketProvider";
+import AuthenticateProvider from "@/lib/providers/AuthenticateProvider";
 // import ScrollToTopButton from "@/components/UI/ScrollToTopButton/ScrollToTopButton";
 
 const inter = Inter({
@@ -28,27 +29,24 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <head>
-        <script
-          async
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4743849065459298"
-          crossOrigin="anonymous"
-        />
-      </head>
+      <head></head>
       <body
         suppressHydrationWarning={true}
         className={`${inter.variable} antialiased !bg-white`}
       >
         <NextUiProvider>
           <ReduxProvider>
-            <>
-              <div className="min-h-screen h-full grid grid-rows-[auto_1fr_auto] max-w-[100vw] overflow-hidden">
-                <FacebookPixel />
-                {children}
-              </div>
-              {/* <ScrollToTopButton /> */}
-              <Toaster richColors position="top-right" />
-            </>
+            <SocketProvider>
+              <AuthenticateProvider>
+                <>
+                  <div className="min-h-screen h-full grid grid-rows-[auto_1fr_auto] max-w-[100vw] overflow-hidden">
+                    {children}
+                  </div>
+                  {/* <ScrollToTopButton /> */}
+                  <Toaster richColors position="top-right" />
+                </>{" "}
+              </AuthenticateProvider>
+            </SocketProvider>
           </ReduxProvider>
         </NextUiProvider>
       </body>

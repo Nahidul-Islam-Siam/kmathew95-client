@@ -1,4 +1,5 @@
-"use client"
+/* eslint-disable @typescript-eslint/no-explicit-any */
+"use client";
 
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -8,41 +9,122 @@ import { Navigation, Pagination, Autoplay } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
+import { useGetPublicReviewsQuery } from "@/redux/service/admin/review";
+import { useEffect, useState } from "react";
+import { motion, useAnimation } from "framer-motion";
+import { useInView } from "react-intersection-observer";
+
+// Animation variants
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.3 },
+  },
+};
+
+const itemVariants = {
+  hidden: { y: 20, opacity: 0 },
+  visible: { y: 0, opacity: 1, transition: { duration: 0.6 } },
+};
+
+// Animated Counter Component
+const AnimatedCounter = ({ from = 0, to, suffix = "" }: { from?: number; to: number; suffix?: string }) => {
+  const [value, setValue] = useState(from);
+  const controls = useAnimation();
+  const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.5 });
+
+  useEffect(() => {
+    if (inView) {
+      const duration = 2000;
+      const stepTime = Math.abs(Math.floor(duration / (to - from)));
+      let currentValue = from;
+
+      const timer = setInterval(() => {
+        currentValue += (to - from) / (duration / stepTime);
+        if ((to > from && currentValue >= to) || (to < from && currentValue <= to)) {
+          currentValue = to;
+          clearInterval(timer);
+        }
+        setValue(currentValue);
+      }, stepTime);
+
+      return () => clearInterval(timer);
+    }
+  }, [to, from, inView]);
+
+  useEffect(() => {
+    if (inView) {
+      controls.start({ opacity: 1, y: 0 });
+    }
+  }, [controls, inView]);
+
+  return (
+    <div ref={ref}>
+      <motion.h3
+        initial={{ opacity: 0, y: 20 }}
+        animate={controls}
+        className="text-xl md:text-2xl font-bold text-gray-900"
+      >
+        {value.toFixed(1)}{suffix}
+      </motion.h3>
+    </div>
+  );
+};
 
 export default function TestimonialSection() {
-  const testimonials = [
+  const { data: reviewsData, isLoading } = useGetPublicReviewsQuery();
+
+  // Extract real testimonials
+const testimonials = reviewsData?.data?.data?.map((review: any) => {
+  const provider = review.reviewProvider?.user || review.reviewProvider || {};
+  return {
+    title: `Rated ${review.rating}/5`,
+    rating: review.rating,
+    quote: review.comment || "No comment provided.",
+    authorName: provider.name || provider.fastName + " " + provider.lastName || "Unknown",
+    authorRole: provider.trader || "Client",
+    authorAvatarSrc: provider.avatar || "/images/avatar.png",
+  };
+}) || [];
+
+  // Default fallback if no data
+  const fallbackTestimonials = [
     {
-      title: "Great Skill",
+      title: "Highly Recommend",
       rating: 5,
-      quote: "Lorem ipsum dolor sit amet, consectetur...",
-      authorName: "Courtney Henry",
-      authorRole: "Web Designer",
-      authorAvatarSrc: "images/profiles/profile1.jpg",
-    },
-    {
-      title: "Excellent Service",
-      rating: 5,
-      quote: "This platform has transformed how I find talent...",
+      quote: "Professional, responsive, and delivered beyond expectations.",
       authorName: "Jane Doe",
       authorRole: "Project Manager",
-      authorAvatarSrc: "images/profiles/profile2.jpg",
-    },
-    {
-      title: "Highly Recommended",
-      rating: 4,
-      quote: "I was skeptical at first, but the quality of work...",
-      authorName: "Mark Johnson",
-      authorRole: "Startup Founder",
-      authorAvatarSrc: "images/profiles/profile3.jpg",
+      authorAvatarSrc: "/images/profiles/profile2.jpg",
     },
   ];
+
+  // Use real or fallback
+  const displayTestimonials = testimonials.length > 0 ? testimonials : fallbackTestimonials;
+
+  // Animation controls
+  const controls = useAnimation();
+  const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.2 });
+
+  useEffect(() => {
+    if (inView) {
+      controls.start("visible");
+    }
+  }, [controls, inView]);
 
   return (
     <section className="w-full py-12 md:py-16 lg:py-20 bg-orange-50 font-dm">
       <div className="container mx-auto px-4 md:px-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
           {/* Left: Text & Stats */}
-          <div className="space-y-6 lg:space-y-8">
+          <motion.div
+            ref={ref}
+            initial="hidden"
+            animate={controls}
+            variants={containerVariants}
+            className="space-y-6 lg:space-y-8"
+          >
             <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 leading-tight">
               Everyone&apos;s loving to learn with Skill Switch!
             </h2>
@@ -51,21 +133,31 @@ export default function TestimonialSection() {
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mt-6">
-              {[
-                { title: "38/4", desc: "Clients give a shout-out to pros on Freelio." },
-                { title: "95%", desc: "Customers are happy with their freelancers!" },
-                { title: "Award Winner", desc: "Owning a home is a big deal!" },
-              ].map((stat, i) => (
-                <div 
-                  key={i} 
-                  className="flex flex-col space-y-1 p-4 rounded-xl transition-all duration-300 hover:bg-white hover:shadow-md cursor-default"
-                >
-                  <h3 className="text-xl md:text-2xl font-bold text-gray-900">{stat.title}</h3>
-                  <p className="text-xs sm:text-sm md:text-base text-gray-600">{stat.desc}</p>
-                </div>
-              ))}
+              {/* Stat 1: Average Rating */}
+              <motion.div variants={itemVariants} className="flex flex-col space-y-1 p-4 rounded-xl hover:bg-white hover:shadow-md transition-all duration-300">
+                <AnimatedCounter to={4.8} suffix="/5" />
+                <p className="text-xs sm:text-sm md:text-base text-gray-600">
+                  Clients rate traders highly.
+                </p>
+              </motion.div>
+
+              {/* Stat 2: Satisfaction Rate */}
+              <motion.div variants={itemVariants} className="flex flex-col space-y-1 p-4 rounded-xl hover:bg-white hover:shadow-md transition-all duration-300">
+                <AnimatedCounter to={95} suffix="%" />
+                <p className="text-xs sm:text-sm md:text-base text-gray-600">
+                  Customers are happy with their freelancers!
+                </p>
+              </motion.div>
+
+              {/* Stat 3: Award Winner */}
+              <motion.div variants={itemVariants} className="flex flex-col space-y-1 p-4 rounded-xl hover:bg-white hover:shadow-md transition-all duration-300">
+                <h3 className="text-xl md:text-2xl font-bold text-gray-900">Award Winner</h3>
+                <p className="text-xs sm:text-sm md:text-base text-gray-600">
+                  Trusted platform for talent & clients.
+                </p>
+              </motion.div>
             </div>
-          </div>
+          </motion.div>
 
           {/* Right: Swiper Testimonials */}
           <div className="relative w-full">
@@ -73,7 +165,7 @@ export default function TestimonialSection() {
               modules={[Navigation, Pagination, Autoplay]}
               spaceBetween={24}
               slidesPerView={1}
-              loop
+              loop={true}
               autoplay={{ delay: 5000, disableOnInteraction: false }}
               pagination={{
                 clickable: true,
@@ -87,7 +179,7 @@ export default function TestimonialSection() {
               }}
               className="testimonial-swiper w-full"
             >
-              {testimonials.map((testimonial, index) => (
+              {displayTestimonials.map((testimonial, index) => (
                 <SwiperSlide key={index}>
                   <div className="transition-all duration-300 hover:scale-[1.02]">
                     <TestimonialCard {...testimonial} />

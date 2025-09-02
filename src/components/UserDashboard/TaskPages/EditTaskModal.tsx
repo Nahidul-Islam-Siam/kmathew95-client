@@ -2,7 +2,7 @@
 // components/management/EditTaskModal.tsx
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,9 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-import { Upload as LucideUploadIcon } from "lucide-react"; // ✅ Icon only
-import { FileText, MapPin, Plus, Upload, X, Trash2 } from "lucide-react";
+import { FileText, MapPin, Plus, Upload, X } from "lucide-react";
 import Image from "next/image";
 import { useGetCategoryQuery } from "@/redux/service/admin/category";
 import { useUpdateTaskManagementMutation } from "@/redux/service/admin/taskManagemant";
@@ -25,14 +23,16 @@ import Swal from "sweetalert2";
 
 // 🔽 Import types
 import { TaskManagementResponseData } from "@/redux/service/admin/taskManagemant";
+import { ApiTask } from "./ManageTradersPage";
 
 interface EditModalProps {
   open: boolean;
   onClose: () => void;
-  task: TaskManagementResponseData | null; // ← Accept real API task
+  task: ApiTask | null;
+  refetch: () => void;
 }
 
-export default function EditTaskModal({ open, onClose, task }: EditModalProps) {
+export default function EditTaskModal({ open, onClose, task, refetch }: EditModalProps) {
   const [title, setTitle] = useState("");
   const [taskType, setTaskType] = useState<"CASH" | "PAYMENT">("PAYMENT");
   const [location, setLocation] = useState("");
@@ -51,37 +51,49 @@ export default function EditTaskModal({ open, onClose, task }: EditModalProps) {
   const [filePreview, setFilePreview] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
 
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
-
   // Fetch categories
   const {  data: categoryData, isLoading: isCategoryLoading } = useGetCategoryQuery();
-
-  // Mutation
   const [updateTask, { isLoading: isUpdating }] = useUpdateTaskManagementMutation();
 
-  const categoryOptions = categoryData?.data?.data || [];
+  // Extract category options safely
+  const categoryOptions = useMemo(() => {
+    return Array.isArray(categoryData?.data?.data)
+      ? categoryData.data.data
+      : [];
+  }, [categoryData]);
 
-  // Subcategories
-  const subCategoryOptions = categoryOptions
-    .find((cat: any) => cat.id === selectedCategoryId)
-    ?.SubCategory || [];
+  // ✅ Use useMemo to compute subcategories only when categoryid or categoryOptions change
+  const subCategoryOptions = useMemo(() => {
+    if (!categoryid || !categoryOptions.length) return [];
 
-  // 📦 Handle file upload
-// 📦 Handle file upload
-const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-  const file = e.target.files?.[0];
-  if (!file) return;
+    const category = categoryOptions.find((cat: any) => cat.id === categoryid);
 
-  const allowedTypes = ["application/pdf", "image/png", "image/jpeg", "image/jpg"];
-  if (!allowedTypes.includes(file.type)) {
-    toast.error("Only PDF and image files are allowed.");
-    return; 
-  }
+    if (!category) return [];
 
-  setUploadedFile(file);
-  const url = URL.createObjectURL(file);
-  setFilePreview(url);
-};
+    // Handle multiple possible keys for subcategories
+    const subCategories = category.SubCategory || 
+                          category.subCategory || 
+                          category.subcategories || 
+                          [];
+
+    return Array.isArray(subCategories) ? subCategories : [];
+  }, [categoryid, categoryOptions]);
+
+  // Handle file upload
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const allowedTypes = ["application/pdf", "image/png", "image/jpeg", "image/jpg"];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error("Only PDF and image files are allowed.");
+      return;
+    }
+
+    setUploadedFile(file);
+    const url = URL.createObjectURL(file);
+    setFilePreview(url);
+  };
 
   const togglePreview = () => setShowPreview(!showPreview);
 
@@ -92,7 +104,7 @@ const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     };
   }, [filePreview]);
 
-  // 🔄 Load task data when modal opens
+  // Load task data when modal opens
   useEffect(() => {
     if (open && task) {
       setTitle(task.title);
@@ -102,11 +114,10 @@ const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
       setMaxSalary(task.max_salary.toString());
       setTags([...task.tags]);
       setSkills([...task.require_skills]);
-      setCategoryid(task.categoryid);
+      setCategoryid(task.categoryid || "");
       setSubCategoryid(task.subCategoryid);
       setDescription(task.description);
-      setDeadline(task.deadline.split("T")[0]); // Convert to YYYY-MM-DD
-      setSelectedCategoryId(task.categoryid);
+      setDeadline(task.deadline.split("T")[0]); // Format to YYYY-MM-DD
     }
   }, [open, task]);
 
@@ -139,8 +150,7 @@ const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
   // Handle category change
   const handleCategoryChange = (value: string) => {
     setCategoryid(value);
-    setSubCategoryid(null);
-    setSelectedCategoryId(value);
+    setSubCategoryid(null); // Reset subcategory
   };
 
   // Form submit
@@ -165,7 +175,6 @@ const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
       return;
     }
 
-    // Prepare postData
     const postData = {
       title,
       taskType,
@@ -182,23 +191,22 @@ const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
 
     const formData = new FormData();
     formData.append("data", JSON.stringify(postData));
-
-    if (uploadedFile) {
-      formData.append("files", uploadedFile);
-    }
+    if (uploadedFile) formData.append("files", uploadedFile);
 
     try {
       const result = await updateTask({ id: task!.id, formData }).unwrap();
 
-      Swal.fire({
-        icon: "success",
-        title: "Updated!",
-        text: result.message || "Task updated successfully!",
-        timer: 2000,
-        showConfirmButton: false,
-      });
-
-      onClose();
+      if (result?.success) {
+        Swal.fire({
+          icon: "success",
+          title: "Updated!",
+          text: "Task updated successfully!",
+          timer: 2000,
+          showConfirmButton: false,
+        });
+        onClose();
+        refetch();
+      }
     } catch (error: any) {
       const message =
         error?.data?.message || error?.message || "Failed to update task.";
@@ -209,28 +217,36 @@ const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
   if (!open || !task) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/20 bg-opacity-50 z-50 flex items-center justify-center overflow-auto p-4">
-      <div className="max-w-4xl w-full mx-auto p-6 bg-white rounded-lg shadow-lg">
-        <div className="flex justify-end">
+    <div
+      className="fixed inset-0 z-50 flex items-start md:items-center justify-center bg-black/30 backdrop-blur-sm p-4 overflow-y-auto"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-2xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex justify-between items-center p-4 border-b bg-gray-50">
+          <div>
+            <h1 className="text-xl font-semibold text-gray-900">Edit Task</h1>
+            <p className="text-sm text-gray-600 flex items-center gap-1 mt-1">
+              <FileText className="w-3 h-3" />
+              Update your job post
+            </p>
+          </div>
           <button
             onClick={onClose}
-            className="bg-red-500 hover:bg-red-600 text-white w-8 h-8 flex items-center justify-center rounded-full"
+            className="p-2 hover:bg-gray-200 rounded-full transition"
+            aria-label="Close modal"
           >
-            <X className="w-5 h-5" />
+            <X className="w-5 h-5 text-gray-600" />
           </button>
         </div>
 
-        <div className="mb-8">
-          <h1 className="text-2xl font-semibold text-gray-900">Edit Task</h1>
-          <div className="flex items-center gap-2 text-gray-600 mt-1">
-            <FileText className="w-4 h-4" />
-            <span>Update your job post</span>
-          </div>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Scrollable Form Body */}
+        <form onSubmit={handleSubmit} className="p-5 space-y-5 max-h-[80vh] overflow-y-auto">
           {/* Job Title & Type */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Job Title</Label>
               <Input value={title} onChange={(e) => setTitle(e.target.value)} required />
@@ -249,44 +265,67 @@ const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
             </div>
           </div>
 
-          {/* Category & Subcategory & Location */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Category, Subcategory, Location */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Job Category */}
             <div className="space-y-2">
               <Label>Job Category</Label>
-              <Select value={categoryid} onValueChange={handleCategoryChange} disabled={isCategoryLoading}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select Category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categoryOptions.map((cat: any) => (
-                    <SelectItem key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {isCategoryLoading ? (
+                <p className="text-xs text-gray-500">Loading...</p>
+              ) : (
+                <Select value={categoryid} onValueChange={handleCategoryChange}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select Category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categoryOptions.length === 0 ? (
+                      <p className="p-2 text-xs text-gray-500">No categories found</p>
+                    ) : (
+                      categoryOptions.map((cat: any) => (
+                        <SelectItem key={cat.id} value={cat.id}>
+                          {cat.name}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
 
+            {/* Sub-Category */}
             <div className="space-y-2">
               <Label>Sub-Category</Label>
-              <Select
-                value={subCategoryid || ""}
-                onValueChange={setSubCategoryid}
-                disabled={!selectedCategoryId || subCategoryOptions.length === 0}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={subCategoryOptions.length ? "Select Sub-Category" : "No subcategories"} />
-                </SelectTrigger>
-                <SelectContent>
-                  {subCategoryOptions.map((sub: any) => (
-                    <SelectItem key={sub.id} value={sub.id}>
-                      {sub.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {isCategoryLoading ? (
+                <p className="text-xs text-gray-500">Loading...</p>
+              ) : (
+                <Select
+                  value={subCategoryid || ""}
+                  onValueChange={setSubCategoryid}
+                  disabled={!categoryid || subCategoryOptions.length === 0}
+                >
+                  <SelectTrigger>
+                    <SelectValue
+                      placeholder={
+                        subCategoryOptions.length ? "Select Sub-Category" : "No subcategories"
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {subCategoryOptions.length > 0 ? (
+                      subCategoryOptions.map((sub: any) => (
+                        <SelectItem key={sub.id} value={sub.id}>
+                          {sub.name}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <p className="p-2 text-xs text-gray-500">No subcategories available</p>
+                    )}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
 
+            {/* Location */}
             <div className="space-y-2">
               <Label>Location</Label>
               <div className="relative">
@@ -301,11 +340,11 @@ const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
             </div>
           </div>
 
-          {/* Salary Range */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Salary & Tags */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Salary Range (USD)</Label>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-2">
                 <div className="relative">
                   <Input
                     type="text"
@@ -314,7 +353,7 @@ const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
                     placeholder="Min"
                     className="pr-12"
                   />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">USD</span>
+                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-500">USD</span>
                 </div>
                 <div className="relative">
                   <Input
@@ -324,12 +363,11 @@ const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
                     placeholder="Max"
                     className="pr-12"
                   />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">USD</span>
+                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-500">USD</span>
                 </div>
               </div>
             </div>
 
-            {/* Tags */}
             <div className="space-y-2">
               <Label>Tags</Label>
               <div className="flex gap-2">
@@ -343,11 +381,11 @@ const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
                   <Plus className="w-4 h-4" />
                 </Button>
               </div>
-              <div className="flex flex-wrap gap-2 mt-2">
+              <div className="flex flex-wrap gap-1 mt-1">
                 {tags.map((tag) => (
                   <span
                     key={tag}
-                    className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-700 rounded-md text-sm"
+                    className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-700 rounded-md text-xs"
                   >
                     {tag}
                     <button type="button" onClick={() => removeTag(tag)} className="ml-1 text-red-500">×</button>
@@ -371,11 +409,11 @@ const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
                 <Plus className="w-4 h-4" />
               </Button>
             </div>
-            <div className="flex flex-wrap gap-2 mt-2">
+            <div className="flex flex-wrap gap-1 mt-1">
               {skills.map((skill) => (
                 <span
                   key={skill}
-                  className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded-md text-sm"
+                  className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded-md text-xs"
                 >
                   {skill}
                   <button type="button" onClick={() => removeSkill(skill)} className="ml-1 text-blue-500">×</button>
@@ -391,7 +429,7 @@ const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Describe the task..."
-              className="min-h-32"
+              className="min-h-24 max-h-40 resize-y"
               required
             />
           </div>
@@ -413,7 +451,7 @@ const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
             <div className="flex items-center gap-3">
               <label
                 htmlFor="edit-file-upload"
-                className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50"
+                className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 text-sm"
               >
                 <Upload className="h-4 w-4" />
                 Choose File
@@ -425,17 +463,19 @@ const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
                 onChange={handleFileUpload}
                 className="hidden"
               />
-              {uploadedFile && <span className="text-sm text-gray-600">{uploadedFile.name}</span>}
+              {uploadedFile && (
+                <span className="text-sm text-gray-600 truncate max-w-xs">{uploadedFile.name}</span>
+              )}
             </div>
 
             {uploadedFile && (
-              <div className="flex items-center gap-2 mt-2">
+              <div className="flex items-center gap-2">
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   onClick={togglePreview}
-                  className="text-orange-500 border-orange-500 hover:bg-orange-50"
+                  className="text-orange-500 border-orange-500 text-xs"
                 >
                   {showPreview ? "Hide Preview" : "Show Preview"}
                 </Button>
@@ -444,29 +484,29 @@ const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
 
             {/* Preview */}
             {showPreview && filePreview && (
-              <div className="border border-gray-200 rounded-lg p-4 bg-gray-50 mt-4">
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="text-sm font-medium">File Preview</h4>
+              <div className="border border-gray-200 rounded-lg p-3 bg-gray-50 mt-2">
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="text-xs font-medium">File Preview</h4>
                   <Button
                     type="button"
                     variant="ghost"
                     size="sm"
                     onClick={() => window.open(filePreview, "_blank")}
-                    className="text-orange-500"
+                    className="text-orange-500 text-xs"
                   >
                     Open in New Tab
                   </Button>
                 </div>
 
                 {uploadedFile?.type === "application/pdf" ? (
-                  <iframe src={filePreview} className="w-full h-96 border rounded" title="PDF Preview" />
+                  <iframe src={filePreview} className="w-full h-60 border rounded" title="PDF Preview" />
                 ) : (
                   <Image
                     src={filePreview}
                     alt="Preview"
-                    width={600}
-                    height={400}
-                    className="max-h-96 w-full object-contain border rounded"
+                    width={400}
+                    height={300}
+                    className="w-full h-60 object-contain border rounded"
                   />
                 )}
               </div>
@@ -474,10 +514,10 @@ const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
           </div>
 
           {/* Actions */}
-          <div className="flex gap-4 pt-6">
+          <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t">
             <Button
               type="submit"
-              className="bg-orange-500 hover:bg-orange-600 text-white px-8 py-2"
+              className="bg-orange-500 hover:bg-orange-600 text-white"
               disabled={isUpdating}
             >
               {isUpdating ? "Updating..." : "Update Task"}

@@ -4,7 +4,7 @@ import { get } from "http";
 
 interface LoginRequest {
   email: string;
-  password: string;  
+  password: string;       
 }
 
 const authApi = baseApi.injectEndpoints({
@@ -53,8 +53,8 @@ const authApi = baseApi.injectEndpoints({
     }),
     changePassword: builder.mutation({
       query: (user) => ({
-        url: "/auth/change-pass",
-        method: "PATCH",
+        url: "/auth/change-password",
+        method: "POST",
         body: user,
       }),
       invalidatesTags: ["auth"],
@@ -68,7 +68,7 @@ const authApi = baseApi.injectEndpoints({
     })
   }),
 });
-
+ 
 export const {
   useRegisterUserMutation,
   useLoginUserMutation,

@@ -2,63 +2,48 @@
 "use client";
 
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
-import { useEffect, useState } from "react";
 import { Box, Package, DollarSign, BarChart } from "lucide-react";
 import MetricCard from "@/components/AdminDashboard/AdminDashboardPage/MetricCard";
 import MonthlyRevenueChart from "@/components/AdminDashboard/AdminDashboardPage/MonthlyRevenueChart";
 import RecentTradesTable from "@/components/AdminDashboard/AdminDashboardPage/RecentTradesTable";
+import { useGetAdminAnalyticsQuery } from "@/redux/service/analytics";
+
+// Import the analytics hook
+
 
 export default function DashboardPage() {
-  const [metricData, setMetricData] = useState<any>(null);
-  const [isLoadingMetrics, setIsLoadingMetrics] = useState(true);
-  const [errorMetrics, setErrorMetrics] = useState<string | null>(null);
+  const {
+    data:analyticsResponse,
+    isLoading,
+    error,
+  } = useGetAdminAnalyticsQuery();
 
-  useEffect(() => {
-    // Simulate API call for metric stats
-    const fetchMetricStats = async () => {
-      setIsLoadingMetrics(true);
-      setErrorMetrics(null);
-      try {
-        await new Promise((resolve) => setTimeout(resolve, 600)); // Simulate network delay
-        setMetricData({
-          totalTrades: 126,
-          
-          totalTask: 5426,
-          totalRevenue: 16345426,
-          thisMonthTrades: 13426,
-        });
-      } catch (e) {
-        setErrorMetrics("Failed to load statistics.");
-      } finally {
-        setIsLoadingMetrics(false);
-      }
-    };
-    fetchMetricStats();
-  }, []);
+  // Extract totals from real data
+  const totals = analyticsResponse?.data?.totals;
 
-  const metrics = metricData
+  const metrics = totals
     ? [
         {
-          label: "Total Trades",
-          value: metricData.totalTrades,
+          label: "Total Traders",
+          value: totals.totalTraders,
           icon: Box,
           iconBgColor: "#FF8C38", // Orange
         },
         {
           label: "Total Task",
-          value: metricData.totalTask,
+          value: totals.totalTask,
           icon: Package,
           iconBgColor: "#1A2B4B", // Dark Blue
         },
         {
           label: "Total Revenue",
-          value: `$${metricData.totalRevenue.toLocaleString()}`,
+          value: `$${totals.totalRevenue.toLocaleString()}`,
           icon: DollarSign,
           iconBgColor: "#FF0000", // Red
         },
         {
-          label: "This Month Trades",
-          value: `$${metricData.thisMonthTrades.toLocaleString()}`,
+          label: "Pending Payments",
+          value: `$${totals.totalPendingPayment.toLocaleString()}`,
           icon: BarChart,
           iconBgColor: "#808080", // Gray
         },
@@ -67,36 +52,36 @@ export default function DashboardPage() {
 
   return (
     <SidebarProvider defaultOpen={true}>
-      {/* <DashboardSidebar /> */}
       <SidebarInset>
-        {/* <DashboardHeader /> */}
         <div className="p-4 md:p-6 lg:p-8">
-          {" "}
-          {/* Adjusted padding */}
           <h2 className="text-lg font-semibold mb-4 text-gray-700">
             Dashboard Overview
-          </h2>{" "}
-          {/* Adjusted text style */}
+          </h2>
+
           {/* Metric Cards */}
           <div className="grid lg:grid-cols-4 md:grid-cols-2 grid-cols-1 gap-4">
-            {isLoadingMetrics && (
-              <p className="col-span-full text-center">Loading metrics...</p>
-            )}
-            {errorMetrics && (
-              <p className="col-span-full text-center text-red-500">
-                {errorMetrics}
+            {isLoading && (
+              <p className="col-span-full text-center text-gray-500">
+                Loading metrics...
               </p>
             )}
-            {!isLoadingMetrics &&
-              !errorMetrics &&
+            {error && (
+              <p className="col-span-full text-center text-red-500">
+                Failed to load statistics. Please try again.
+              </p>
+            )}
+            {!isLoading &&
+              !error &&
               metrics.map((metric, index) => (
                 <MetricCard key={index} {...metric} />
               ))}
           </div>
+
           {/* Monthly Revenue Chart */}
           <div className="mt-6">
             <MonthlyRevenueChart />
           </div>
+
           {/* Recent Trades Table */}
           <div className="mt-6">
             <RecentTradesTable />

@@ -17,6 +17,20 @@
     min-height: 100vh; /* Ensure body is at least viewport height */
   }
 
+  /* Add this in your global CSS file (e.g., app/globals.css) */
+.service-card {
+  opacity: 0;
+  transform: translateY(10px);
+  animation: fadeInUp 0.5s ease forwards;
+}
+
+@keyframes fadeInUp {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
   :root {
     --background: 0 0% 100%;
     --foreground: 240 10% 3.9%;
@@ -114,6 +128,25 @@
 
 .admin-menu .ant-menu-item-selected .ant-menu-title-content {
   color: #fff !important;
+}
+
+
+
+
+/* Custom Dots */
+.review-carousel .slick-dots li button {
+  background: #d1d5db;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.review-carousel .slick-dots li.slick-active button {
+  background: #1890ff;
+}
+
+.review-carousel .slick-dots li {
+  margin: 0 4px;
 }
 
 /* Small screens (sm) */

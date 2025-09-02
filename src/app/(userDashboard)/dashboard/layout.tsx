@@ -1,8 +1,6 @@
 "use client";
 
 import type React from "react";
-import img from "@/assets/profiles/avatar1.png";
-
 import { Layout, Menu } from "antd";
 import {
   BookmarkCheck,
@@ -12,6 +10,7 @@ import {
   ScrollText,
   Settings,
   Star,
+  SubscriptIcon,
   User,
   Wallet,
 } from "lucide-react";
@@ -19,7 +18,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"; // Using shadcn Avatar
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,13 +27,27 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import Image from "next/image";
+import { useGetUserQuery } from "@/redux/service/userApi";
+import { Skeleton } from "@/components/ui/skeleton";
+
 const { Sider, Content, Header } = Layout;
 
 const UserAdminLayout = ({ children }: { children: React.ReactNode }) => {
   const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
+
+  // Fetch user data
+  const { data: userData, isLoading } = useGetUserQuery();
+
+  // Extract user and trader data
+  const user = userData?.data;
+  const trader = user?.trader;
+
+  // Derived values
+  const fullName = [trader?.fastName, trader?.lastName].filter(Boolean).join(" ") || user?.username || "User";
+  const role = user?.role || "User";
+  const avatar = user?.avatar || "/images/profiles/avatar1.png";
 
   const handleLogout = () => {
     console.log("Dummy logout triggered");
@@ -61,6 +74,11 @@ const UserAdminLayout = ({ children }: { children: React.ReactNode }) => {
       label: "Profile",
     },
     {
+      key: "/dashboard/subscription",
+      icon: <SubscriptIcon size={20} />,
+      label: "Subscriptions",
+    },
+    {
       key: "/dashboard/messages",
       icon: <ScrollText size={20} />,
       label: "Messages",
@@ -71,9 +89,9 @@ const UserAdminLayout = ({ children }: { children: React.ReactNode }) => {
       label: "Tasks",
     },
     {
-      key: "/dashboard/wallet",
+      key: "/dashboard/stripe-dashboard",
       icon: <Wallet size={20} />,
-      label: "Wallet",
+      label: "Stripe Dashboard",
     },
     {
       key: "/dashboard/payment",
@@ -125,10 +143,7 @@ const UserAdminLayout = ({ children }: { children: React.ReactNode }) => {
           {!collapsed && (
             <Link href="/">
               <span className="text-xl font-bold" style={{ color: "#1C2A47" }}>
-                Skill
-      
-                  Switch
-           
+                SkillSwitch
               </span>
             </Link>
           )}
@@ -140,6 +155,7 @@ const UserAdminLayout = ({ children }: { children: React.ReactNode }) => {
             »
           </span>
         </div>
+
         {/* Menu */}
         <Menu
           mode="inline"
@@ -155,18 +171,20 @@ const UserAdminLayout = ({ children }: { children: React.ReactNode }) => {
           items={menuItems}
           className="admin-menu"
         />
+
         {/* Logout */}
         <div className="p-4" style={{ marginTop: "auto" }}>
           <div
             onClick={handleLogout}
             className="flex items-center gap-2 cursor-pointer font-medium text-[15px]"
-            style={{ color: "#ef4444" }} // Tailwind red-500
+            style={{ color: "#ef4444" }}
           >
             <LogOut size={20} />
             {!collapsed && <span>Log out</span>}
           </div>
         </div>
       </Sider>
+
       {/* Main Content */}
       <Layout>
         <Header
@@ -184,39 +202,56 @@ const UserAdminLayout = ({ children }: { children: React.ReactNode }) => {
               className="hidden md:block text-lg font-semibold"
               style={{ color: "#092c4c" }}
             >
-              Welcome back, Alex Grinder
+              Welcome back, <span className="capitalize">{fullName}</span>
             </h1>
+
             <div className="flex justify-center items-center gap-4">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <div className="flex items-center gap-2 cursor-pointer">
-                    <Image
-                      src={img}
-                      alt="User Avatar"
-                      className="w-10 h-10 rounded-full"
-                      width={32}
-                      height={32}
-                    ></Image>
+                    {isLoading ? (
+                      <Skeleton className="h-10 w-10 rounded-full" />
+                    ) : (
+                      <Avatar className="w-10 h-10 border border-gray-200">
+                        <AvatarImage src={avatar} alt={fullName} />
+                        <AvatarFallback className="bg-slate-700 text-white">
+                          {fullName.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                    )}
+
                     <div className="flex flex-col items-start justify-center">
-                      <span
-                        className="text-sm font-medium"
-                        style={{ color: "#374151" }}
-                      >
-                        Alex Grinder
-                      </span>
-                      <span className="text-xs" style={{ color: "#6b7280" }}>
-                        User
-                      </span>
+                      {isLoading ? (
+                        <>
+                          <Skeleton className="h-4 w-24 mb-1" />
+                          <Skeleton className="h-3 w-16" />
+                        </>
+                      ) : (
+                        <>
+                          <span
+                            className="text-sm font-medium"
+                            style={{ color: "#374151" }}
+                          >
+                            {fullName}
+                          </span>
+                          <span className="text-xs" style={{ color: "#6b7280" }}>
+                            {role}
+                          </span>
+                        </>
+                      )}
                     </div>
                   </div>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem>Profile</DropdownMenuItem>
-                  <DropdownMenuItem>Settings</DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout}>
+                <DropdownMenuContent align="end" className="w-56">
+                 
+            
+            
+           
+           
+                  <DropdownMenuItem
+                    onClick={handleLogout}
+                    className="text-red-600"
+                  >
                     Log out
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -224,13 +259,14 @@ const UserAdminLayout = ({ children }: { children: React.ReactNode }) => {
             </div>
           </div>
         </Header>
+
         <Content
           style={{
             margin: 0,
             height: "calc(100vh - 64px)",
             overflowY: "auto",
             padding: 24,
-            background: "#f9fafb", // Tailwind gray-50
+            background: "#f9fafb",
           }}
         >
           {children}
