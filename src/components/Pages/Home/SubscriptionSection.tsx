@@ -9,7 +9,56 @@ import { useSelector } from "react-redux";
 import { RootState } from "@/redux/store";
 import { redirect } from "next/navigation";
 
-// Map plan codes to display names and highlight
+// 🔽 Fallback / Mock Subscription Plans
+const fallbackPlans = [
+  {
+    id: "plan_fallback_basic",
+    name: "BASIC_PLAN",
+    price: 9.99,
+    description: "Perfect for freelancers starting out.",
+    featuresList: [
+      "10 Task Posts per Month",
+      "Basic Profile Visibility",
+      "Email Support",
+      "No Commission on Earnings",
+    ],
+    plan: "BASIC_PLAN",
+    stripePriceId: "price_fallback_basic",
+  },
+  {
+    id: "plan_fallback_pro",
+    name: "PRO_PLAN",
+    price: 29.99,
+    description: "Best for active freelancers and agencies.",
+    featuresList: [
+      "Unlimited Task Posts",
+      "Featured Profile Badge",
+      "Priority Support",
+      "Analytics Dashboard",
+      "No Commission on Earnings",
+    ],
+    plan: "PRO_PLAN",
+    stripePriceId: "price_fallback_pro",
+  },
+  {
+    id: "plan_fallback_elite",
+    name: "ELITE_PLAN",
+    price: 59.99,
+    description: "For top-tier professionals and teams.",
+    featuresList: [
+      "Unlimited Everything",
+      "VIP Profile Placement",
+      "24/7 Dedicated Support",
+      "Advanced Analytics",
+      "Team Collaboration Tools",
+      "No Commission on Earnings",
+    ],
+    plan: "ELITE_PLAN",
+    stripePriceId: "price_fallback_elite",
+  },
+];
+
+// Map plan codes to display names
 const PLAN_DISPLAY_NAMES: Record<string, string> = {
   PRO_PLAN: "Pro Plan",
   ELITE_PLAN: "Elite Plan",
@@ -28,9 +77,12 @@ export default function SubscriptionSection() {
 
   const accessToken = useSelector((state: RootState) => state.auth.accessToken);
 
-  const subscriptionPlans = plansData?.data?.data || [];
+  // Use real data or fallback
+  const subscriptionPlans = isError || !plansData?.success || !plansData?.data?.data?.length
+    ? fallbackPlans
+    : plansData.data.data;
 
-  // Transform API data to match PricingCard
+  // Transform API or fallback data to match PricingCard
   const formattedPlans = subscriptionPlans.map((plan) => ({
     id: plan.id,
     monthlyPrice: plan.price,
@@ -42,29 +94,37 @@ export default function SubscriptionSection() {
   }));
 
   // Handle subscription: create session and redirect to Stripe
- const handleSubscribe = async (priceId: string) => {
-  try {
-    const res = await createUserSubscription({ subscriptionPlanId: priceId }).unwrap();
+  const handleSubscribe = async (priceId: string) => {
+    try {
+      // Check if we're using a fallback plan
+      const isFallback = priceId.startsWith("price_fallback_");
 
-    if (!accessToken) {
-      // Handle case where access token is not available
-      redirect("/login");
+      if (isFallback) {
+        toast.info("Demo Mode: Redirect to Stripe would happen in production.");
+        window.open("https://stripe.com/demo-checkout", "_blank", "noopener,noreferrer");
+        return;
+      }
+
+      if (!accessToken) {
+        toast.info("Please log in to subscribe.");
+        redirect("/login");
+        return;
+      }
+
+      const res = await createUserSubscription({ subscriptionPlanId: priceId }).unwrap();
+      const sessionUrl = res?.data?.session?.sessionUrl;
+
+      if (res?.success && sessionUrl) {
+        window.open(sessionUrl, '_blank', 'noopener,noreferrer');
+      } else {
+        throw new Error(res?.message || "Failed to get checkout URL");
+      }
+    } catch (error: any) {
+      const errorMsg = error?.data?.message || "Failed to start checkout. Please try again.";
+      toast.error(errorMsg);
     }
+  };
 
-    const sessionUrl = res?.data?.session?.sessionUrl;
-
-    if (res?.success && sessionUrl) {
-      // ✅ Open Stripe Checkout in a new tab
-      window.open(sessionUrl, '_blank', 'noopener,noreferrer');
-    } else {
-      throw new Error(res?.message || "Failed to get checkout URL");
-    }
-  } catch (error: any) {
-    const errorMsg = error?.data?.message || "Failed to start checkout. Please try again.";
-    toast.error(errorMsg);
-    throw error; // Let PricingCard handle UI reset
-  }
-};
   // Loading State
   if (isLoading) {
     return (
@@ -90,13 +150,39 @@ export default function SubscriptionSection() {
     );
   }
 
-  // Error State
+  // Error State (but show fallback)
   if (isError || !plansData?.success) {
     return (
-      <section className="w-full py-16 bg-gradient-to-br from-gray-50 to-white">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl font-bold text-gray-900 mb-4">Membership Plans</h2>
-          <p className="text-red-500">Failed to load plans. Please try again later.</p>
+      <section className="w-full py-16 md:py-20 lg:py-24 bg-gradient-to-br from-gray-50 to-white">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center">
+          <div className="text-center mb-12 sm:mb-16 lg:mb-20">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
+              Membership Plans
+            </h2>
+            <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl mx-auto px-4">
+              Give your visitors a smooth online experience with a solid UX design.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-7xl">
+            {formattedPlans.map((plan) => (
+              <PricingCard
+                key={plan.id}
+                price={plan.monthlyPrice}
+                period="monthly"
+                planName={plan.planName}
+                description={plan.description}
+                features={plan.features}
+                highlighted={plan.highlighted}
+                stripePriceId={plan.stripePriceId}
+                onSubscribe={handleSubscribe}
+              />
+            ))}
+          </div>
+
+          <div className="mt-6 text-sm text-gray-500">
+            Displaying demo plans due to temporary service unavailability.
+          </div>
         </div>
       </section>
     );

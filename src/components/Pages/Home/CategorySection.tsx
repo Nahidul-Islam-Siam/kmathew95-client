@@ -29,68 +29,106 @@ interface Category {
   SubCategory: SubCategory[];
 }
 
+// Fallback dummy data with local images
+const fallbackCategories = [
+  {
+    id: "fallback-1",
+    name: "Development & IT",
+    icon: "/images/categories/category-1.jpg.png",
+    files: [],
+    SubCategory: [],
+  },
+  {
+    id: "fallback-2",
+    name: "Design & Creative",
+    icon: "/images/categories/category-2.jpg.png",
+    files: [],
+    SubCategory: [],
+  },
+  {
+    id: "fallback-3",
+    name: "Digital Marketing",
+    icon: "/images/categories/category-3.jpg.png",
+    files: [],
+    SubCategory: [],
+  },
+  {
+    id: "fallback-4",
+    name: "Writing & Translation",
+    icon: "/images/categories/category-5.jpg.png",
+    files: [],
+    SubCategory: [],
+  },
+  {
+    id: "fallback-5",
+    name: "Video & Animation",
+    icon: "/images/categories/category-3.jpg.png",
+    files: [],
+    SubCategory: [],
+  },
+];
+
+// Helper to determine safe image source (avoid localhost)
+const getSafeImageSrc = (url: string | undefined, categoryName?: string): string => {
+  // If no URL, use fallback
+  if (!url) return "/placeholder.svg";
+
+  // If it's a relative/local path (e.g. /images/...), trust it
+  if (url.startsWith("/")) return url;
+
+  try {
+    const parsedUrl = new URL(url);
+    // Block localhost and 127.0.0.1
+    if (
+      parsedUrl.hostname === "localhost" ||
+      parsedUrl.hostname === "127.0.0.1"
+    ) {
+      // Try to map category name to fallback image
+      const fallbackMap: Record<string, string> = {
+        "Development & IT": "/images/categories/category-1.jpg.png",
+        "Design & Creative": "/images/categories/category-2.jpg.png",
+        "Digital Marketing": "/images/categories/category-3.jpg.png",
+        "Writing & Translation": "/images/categories/category-5.jpg.png",
+        "Video & Animation": "/images/categories/category-3.jpg.png",
+      };
+      return fallbackMap[categoryName || ""] || "/images/categories/category-1.jpg.png";
+    }
+    return url; // Safe external URL
+  } catch (e) {
+    // If URL is malformed, fall back
+    return categoryName
+      ? getSafeImageSrc(undefined, categoryName)
+      : "/images/categories/category-1.jpg.png";
+  }
+};
+
 export default function TraderCategorySection() {
-  const { data: categoriesData, isLoading, error } = useGetCategoryQuery();
+  const {  data:categoriesData, isLoading, error } = useGetCategoryQuery();
   const [categories, setCategories] = useState<Category[]>([]);
 
-  // Extract and map real data
+  // Extract and map real data from API
   useEffect(() => {
     if (categoriesData?.data?.data) {
       const mapped = categoriesData.data.data.map((cat: any) => ({
         id: cat.id,
         name: cat.name,
-        icon: cat.icon || cat.files?.[0] || "/placeholder.svg",
-        files: cat.files,
-        SubCategory: cat.SubCategory || [],
+        icon: cat.icon || cat.files?.[0], // prefer icon, fallback to first file
+        files: cat.files || [],
+        SubCategory: Array.isArray(cat.SubCategory) ? cat.SubCategory : [],
       }));
       setCategories(mapped);
     }
   }, [categoriesData]);
 
-  // Fallback dummy data
-  const fallbackCategories = [
-    {
-      id: "fallback-1",
-      name: "Development & IT",
-      icon: "/images/categories/category-1.jpg.png",
-      SubCategory: [],
-    },
-    {
-      id: "fallback-2",
-      name: "Design & Creative",
-      icon: "/images/categories/category-2.jpg.png",
-      SubCategory: [],
-    },
-    {
-      id: "fallback-3",
-      name: "Digital Marketing",
-      icon: "/images/categories/category-3.jpg.png",
-      SubCategory: [],
-    },
-    {
-      id: "fallback-4",
-      name: "Writing & Translation",
-      icon: "/images/categories/category-5.jpg.png",
-      SubCategory: [],
-    },
-    {
-      id: "fallback-5",
-      name: "Video & Animation",
-      icon: "/images/categories/category-3.jpg.png",
-      SubCategory: [],
-    },
-  ];
-
+  // Use real categories or fallback
   const displayCategories = categories.length > 0 ? categories : fallbackCategories;
 
   if (error) {
     console.error("Failed to load categories", error);
   }
 
-  // 🔹 Choose: First category to link to (or change logic)
+  // Default link: first category or fallback
   const defaultCategory = displayCategories[0];
-
-  // 🔹 Generate URL with encoded category name
   const categoryLink = defaultCategory
     ? `/all-services?category=${encodeURIComponent(defaultCategory.name)}`
     : "/all-services";
@@ -109,7 +147,7 @@ export default function TraderCategorySection() {
             </Text>
           </div>
 
-          {/* 🔗 View All Button – Links to First Category */}
+          {/* View All Button */}
           <Link href={categoryLink} passHref>
             <Button
               type="text"
@@ -144,10 +182,14 @@ export default function TraderCategorySection() {
           >
             {displayCategories.map((category) => {
               const skillCount = category.SubCategory.length || 0;
+              const imageSrc = getSafeImageSrc(category.icon, category.name);
 
               return (
                 <SwiperSlide key={category.id}>
-                  <Link href={`/all-services?category=${encodeURIComponent(category.name)}`} passHref>
+                  <Link
+                    href={`/all-services?category=${encodeURIComponent(category.name)}`}
+                    passHref
+                  >
                     <Card
                       hoverable
                       className="h-80 overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300 rounded-xl cursor-pointer"
@@ -158,8 +200,9 @@ export default function TraderCategorySection() {
                             alt={category.name}
                             width={500}
                             height={500}
-                            src={category.icon || "/placeholder.svg"}
+                            src={imageSrc}
                             className="w-full h-full object-cover filter grayscale hover:grayscale-0 transition-all duration-300"
+                            unoptimized // Recommended if using dynamic external images
                           />
                           {/* Overlay */}
                           <div className="absolute inset-0 bg-black bg-opacity-40 hover:bg-opacity-30 transition-all duration-300" />

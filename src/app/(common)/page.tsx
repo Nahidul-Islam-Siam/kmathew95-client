@@ -9,6 +9,7 @@ import RatedTraderSection from "@/components/Pages/Home/RatedTraderSection";
 import TestimonialSection from "@/components/Pages/Home/TestimonialSection";
 import SubscriptionSection from "@/components/Pages/Home/SubscriptionSection";
 import AllServicesPage from "@/components/Pages/AllServices/AllServicesPage";
+import TrendingServices from "@/components/Pages/Home/TrendingSection";
 
 const HompPage = () => {
   return <div className="">
