@@ -1,26 +1,47 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import type React from "react";
 import { useState } from "react";
 import { Button, Form, Input, Typography, Card, Row, Col, Space } from "antd";
 import { EnvironmentOutlined, PhoneOutlined, MailOutlined } from "@ant-design/icons";
+import { useAddContactApiMutation } from "@/redux/service/contactApi";
+import { toast } from "sonner";
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
+
+// Define form values type
+interface ContactFormValues {
+  fullName: string;
+  email: string;
+  subject: string;
+  message: string;
+}
 
 export default function ContactUs() {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
 
-  const onFinish = (values: any) => {
+  const [addContact] = useAddContactApiMutation();
+
+  const onFinish = async (values: ContactFormValues) => {
     setLoading(true);
-    console.log("Form submitted:", values);
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      const res = await addContact(values).unwrap();
+
+      if (res.success) {
+        toast.success(res.message || "Message sent successfully!");
+        form.resetFields(); // Reset only on success
+      } else {
+        toast.error(res.message || "Failed to send message. Please try again.");
+      }
+    } catch (error: any) {
+      const errorMsg = error?.data?.message || "Failed to send message. Please try again.";
+      toast.error(errorMsg);
+      console.error("Contact form submission error:", error);
+    } finally {
       setLoading(false);
-      form.resetFields();
-    }, 1500);
+    }
   };
 
   const contactInfo = [
@@ -121,19 +142,14 @@ export default function ContactUs() {
 
             {/* Right Side - Contact Form */}
             <Col xs={24} lg={14}>
-              <Card className="shadow-md bg-[#FCF2EA]">
+              <Card className="shadow-md bg-[#FCF2EA] p-6">
                 <Title level={3} className="!mb-6">
                   Get in touch
                 </Title>
 
-                <Form
-                  form={form}
-                  layout="vertical"
-                  onFinish={onFinish}
-                  requiredMark={false}
-                >
+                <Form form={form} layout="vertical" onFinish={onFinish} requiredMark={false}>
                   <Form.Item
-                    label="Full name"
+                    label="Full Name"
                     name="fullName"
                     rules={[{ required: true, message: "Please enter your full name" }]}
                   >
@@ -154,7 +170,7 @@ export default function ContactUs() {
                   <Form.Item
                     label="Subject"
                     name="subject"
-                    rules={[{ required: true, message: "Please enter subject" }]}
+                    rules={[{ required: true, message: "Please enter a subject" }]}
                   >
                     <Input placeholder="Subject" size="large" />
                   </Form.Item>
@@ -165,7 +181,7 @@ export default function ContactUs() {
                     rules={[{ required: true, message: "Please enter your message" }]}
                   >
                     <TextArea
-                      placeholder="Write about your message"
+                      placeholder="Write your message here..."
                       rows={5}
                       className="resize-none"
                     />

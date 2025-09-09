@@ -91,7 +91,7 @@ function ServiceCard({
               e.preventDefault();
               if (traderUserId) {
                 localStorage.setItem("selectedTraderId", traderUserId);
-                router.push("/message");
+                router.push("/messages");
               }
             }}
           >
@@ -158,6 +158,11 @@ export default function AllServicesPage() {
 
   // Fetch categories & tasks
   const { data: categoryData } = useGetCategoryQuery();
+
+
+  console.log("Category Data:", categoryData);
+
+  
   const {
     data,
     isLoading,
@@ -173,7 +178,7 @@ export default function AllServicesPage() {
   const categoryMap = useMemo(() => {
     const map: Record<string, string[]> = {};
     categoryData?.data?.data?.forEach((cat: any) => {
-      const subcategories = cat.SubCategory?.map((sc: any) => sc.name) || [];
+      const subcategories = cat.subCategory?.map((sc: any) => sc.name) || [];
       map[cat.name] = subcategories;
     });
     return map;

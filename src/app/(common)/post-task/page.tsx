@@ -43,7 +43,7 @@ interface SubCategory {
 interface Category {
   id: string;
   name: string;
-  SubCategory?: SubCategory[];
+  subCategory?: SubCategory[];
 }
 
 interface CategoryResponse {
@@ -108,7 +108,7 @@ export default function PostTask() {
     const category = categoryOptions.find(
       (cat: any) => cat.id === selectedCategoryId
     );
-    return category?.SubCategory || [];
+    return category?.subCategory || [];
   }, [selectedCategoryId, categoryOptions]);
 
   // Handle Category Change

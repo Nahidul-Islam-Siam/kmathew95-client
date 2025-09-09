@@ -7,7 +7,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { useSelector } from "react-redux";
 import { RootState } from "@/redux/store";
-import { redirect } from "next/navigation";
+import { useRouter } from "next/navigation"; // ✅ Use router.push instead of redirect
+import { useEffect } from "react";
 
 // 🔽 Fallback / Mock Subscription Plans
 const fallbackPlans = [
@@ -65,6 +66,7 @@ const PLAN_DISPLAY_NAMES: Record<string, string> = {
   BASIC_PLAN: "Basic Plan",
 };
 
+// Highlighted plan (e.g., Pro is recommended)
 const PLAN_HIGHLIGHTED: Record<string, boolean> = {
   PRO_PLAN: true,
   ELITE_PLAN: false,
@@ -72,10 +74,23 @@ const PLAN_HIGHLIGHTED: Record<string, boolean> = {
 };
 
 export default function SubscriptionSection() {
+  const router = useRouter();
   const { data: plansData, isLoading, isError } = useGetSubscriptionPlanQuery({});
   const [createUserSubscription] = useCreateUserSubscriptionMutation();
 
+  // Get accessToken from Redux store
   const accessToken = useSelector((state: RootState) => state.auth.accessToken);
+
+  // Optional: Redirect to login if this page should ONLY be accessible to logged-in users
+  // Remove this if you want guests to see pricing but require login only on subscribe
+  useEffect(() => {
+    if (!accessToken) {
+      // Optionally warn user they need to log in
+      // Or just allow view but block subscription
+      // Uncomment below to fully protect this page
+      // router.push("/login");
+    }
+  }, [accessToken, router]);
 
   // Use real data or fallback
   const subscriptionPlans = isError || !plansData?.success || !plansData?.data?.data?.length
@@ -93,34 +108,40 @@ export default function SubscriptionSection() {
     stripePriceId: plan.stripePriceId,
   }));
 
-  // Handle subscription: create session and redirect to Stripe
+  // Handle subscription: check auth → create session → redirect to Stripe
   const handleSubscribe = async (priceId: string) => {
+    if (!accessToken) {
+      toast.info("Please log in to subscribe.");
+      router.push("/login"); // ✅ Correct: client-side redirect
+      return;
+    }
+
     try {
-      // Check if we're using a fallback plan
       const isFallback = priceId.startsWith("price_fallback_");
 
+      // Simulate demo mode for fallback plans
       if (isFallback) {
         toast.info("Demo Mode: Redirect to Stripe would happen in production.");
         window.open("https://stripe.com/demo-checkout", "_blank", "noopener,noreferrer");
         return;
       }
 
-      if (!accessToken) {
-        toast.info("Please log in to subscribe.");
-        redirect("/login");
-        return;
-      }
-
+      // Call your API to create a Stripe checkout session
       const res = await createUserSubscription({ subscriptionPlanId: priceId }).unwrap();
+
       const sessionUrl = res?.data?.session?.sessionUrl;
 
-      if (res?.success && sessionUrl) {
+      if (res.success && sessionUrl) {
+        // Open Stripe checkout in new tab
         window.open(sessionUrl, '_blank', 'noopener,noreferrer');
       } else {
-        throw new Error(res?.message || "Failed to get checkout URL");
+        throw new Error(res.message || "Failed to get checkout URL");
       }
     } catch (error: any) {
-      const errorMsg = error?.data?.message || "Failed to start checkout. Please try again.";
+      const errorMsg =
+        error?.data?.message ||
+        error?.message ||
+        "Failed to start checkout. Please try again.";
       toast.error(errorMsg);
     }
   };
@@ -150,7 +171,7 @@ export default function SubscriptionSection() {
     );
   }
 
-  // Error State (but show fallback)
+  // Render fallback UI on error (but still usable)
   if (isError || !plansData?.success) {
     return (
       <section className="w-full py-16 md:py-20 lg:py-24 bg-gradient-to-br from-gray-50 to-white">

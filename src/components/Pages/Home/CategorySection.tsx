@@ -26,54 +26,53 @@ interface Category {
   name: string;
   icon: string;
   files: string[];
-  SubCategory: SubCategory[];
+  subCategory: SubCategory[];
 }
 
-// Fallback dummy data with local images
-const fallbackCategories = [
+// Fallback dummy data with consistent lowercase 'subCategory'
+const fallbackCategories: Category[] = [
   {
     id: "fallback-1",
     name: "Development & IT",
     icon: "/images/categories/category-1.jpg.png",
     files: [],
-    SubCategory: [],
+    subCategory: [],
   },
   {
     id: "fallback-2",
     name: "Design & Creative",
     icon: "/images/categories/category-2.jpg.png",
     files: [],
-    SubCategory: [],
+    subCategory: [],
   },
   {
     id: "fallback-3",
     name: "Digital Marketing",
     icon: "/images/categories/category-3.jpg.png",
     files: [],
-    SubCategory: [],
+    subCategory: [],
   },
   {
     id: "fallback-4",
     name: "Writing & Translation",
     icon: "/images/categories/category-5.jpg.png",
     files: [],
-    SubCategory: [],
+    subCategory: [],
   },
   {
     id: "fallback-5",
     name: "Video & Animation",
     icon: "/images/categories/category-3.jpg.png",
     files: [],
-    SubCategory: [],
+    subCategory: [],
   },
 ];
 
 // Helper to determine safe image source (avoid localhost)
 const getSafeImageSrc = (url: string | undefined, categoryName?: string): string => {
-  // If no URL, use fallback
   if (!url) return "/placeholder.svg";
 
-  // If it's a relative/local path (e.g. /images/...), trust it
+  // If it's a relative path (e.g. /images/...), trust it
   if (url.startsWith("/")) return url;
 
   try {
@@ -83,7 +82,6 @@ const getSafeImageSrc = (url: string | undefined, categoryName?: string): string
       parsedUrl.hostname === "localhost" ||
       parsedUrl.hostname === "127.0.0.1"
     ) {
-      // Try to map category name to fallback image
       const fallbackMap: Record<string, string> = {
         "Development & IT": "/images/categories/category-1.jpg.png",
         "Design & Creative": "/images/categories/category-2.jpg.png",
@@ -95,7 +93,6 @@ const getSafeImageSrc = (url: string | undefined, categoryName?: string): string
     }
     return url; // Safe external URL
   } catch (e) {
-    // If URL is malformed, fall back
     return categoryName
       ? getSafeImageSrc(undefined, categoryName)
       : "/images/categories/category-1.jpg.png";
@@ -103,7 +100,7 @@ const getSafeImageSrc = (url: string | undefined, categoryName?: string): string
 };
 
 export default function TraderCategorySection() {
-  const {  data:categoriesData, isLoading, error } = useGetCategoryQuery();
+  const { data: categoriesData, isLoading, error } = useGetCategoryQuery();
   const [categories, setCategories] = useState<Category[]>([]);
 
   // Extract and map real data from API
@@ -114,7 +111,7 @@ export default function TraderCategorySection() {
         name: cat.name,
         icon: cat.icon || cat.files?.[0], // prefer icon, fallback to first file
         files: cat.files || [],
-        SubCategory: Array.isArray(cat.SubCategory) ? cat.SubCategory : [],
+        subCategory: Array.isArray(cat.subCategory) ? cat.subCategory : [], // ✅ Correct key: lowercase
       }));
       setCategories(mapped);
     }
@@ -181,7 +178,7 @@ export default function TraderCategorySection() {
             className="category-swiper"
           >
             {displayCategories.map((category) => {
-              const skillCount = category.SubCategory.length || 0;
+              const skillCount = category.subCategory?.length || 0; // ✅ Now works correctly
               const imageSrc = getSafeImageSrc(category.icon, category.name);
 
               return (
@@ -202,7 +199,7 @@ export default function TraderCategorySection() {
                             height={500}
                             src={imageSrc}
                             className="w-full h-full object-cover filter grayscale hover:grayscale-0 transition-all duration-300"
-                            unoptimized // Recommended if using dynamic external images
+                            unoptimized // Recommended for dynamic/external images
                           />
                           {/* Overlay */}
                           <div className="absolute inset-0 bg-black bg-opacity-40 hover:bg-opacity-30 transition-all duration-300" />
