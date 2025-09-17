@@ -36,6 +36,9 @@ export default function AllTradersDetailsPage() {
 
   const { data, isLoading, isError } = useGetSingleTraderQuery({ id });
 
+  console.log(data, "data");
+  
+
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
 

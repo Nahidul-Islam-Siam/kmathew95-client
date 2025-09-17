@@ -9,7 +9,7 @@ import { RootState } from "../store";
 
 
 const baseQuery = fetchBaseQuery({
-  baseUrl: "http://kmethw.mmconnect.co.uk/api/v1",
+  baseUrl: "https://kmethw.mmconnect.co.uk/api/v1",
 
   prepareHeaders: (headers, { getState }) => {
     const token = (getState() as RootState).auth?.accessToken;
