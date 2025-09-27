@@ -160,7 +160,7 @@ export default function AllServicesPage() {
   const { data: categoryData } = useGetCategoryQuery();
 
 
-  console.log("Category Data:", categoryData);
+  // console.log("Category Data:", categoryData);
 
   
   const {

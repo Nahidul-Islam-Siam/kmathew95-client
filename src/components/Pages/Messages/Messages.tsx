@@ -245,15 +245,15 @@ export default function ChatPage() {
 
   // Persist and restore selected receiverId
   useEffect(() => {
-    const lastChatUser = localStorage.getItem('lastChatUser');
-    if (lastChatUser) {
-      setReceiverId(lastChatUser);
+    const selectedTraderId = localStorage.getItem('selectedTraderId');
+    if (selectedTraderId) {
+      setReceiverId(selectedTraderId);
     }
   }, []);
 
   useEffect(() => {
     if (receiverId) {
-      localStorage.setItem('lastChatUser', receiverId);
+      localStorage.setItem('selectedTraderId', receiverId);
     }
   }, [receiverId]);
 
@@ -294,17 +294,20 @@ export default function ChatPage() {
   // }, [singleuser, singleUserLoading, singleUserError]);
 
   // but don’t call hooks inside it
-  useEffect(() => {
-    if (userList && Array.isArray(userList.data)) {
-      setUsers(userList.data.map((u: any) => ({
+useEffect(() => {
+  if (userList && Array.isArray(userList.data)) {
+    const filteredUsers = userList.data
+      .filter((u: any) => u.id !== CURRENT_USER_ID) // ← Exclude self
+      .map((u: any) => ({
         ...u,
-        isOnline: false, // Initial, updated via socket
+        isOnline: false,
         lastSeen: u.lastSeen || new Date().toISOString(),
         isTyping: false,
-      })));
-      setIsLoadingUsers(false);
-    }
-  }, [userList]);
+      }));
+    setUsers(filteredUsers);
+    setIsLoadingUsers(false);
+  }
+}, [userList, CURRENT_USER_ID]); // ← Add CURRENT_USER_ID as dep
 
   // get message here 
  useEffect(() => {
@@ -365,34 +368,42 @@ export default function ChatPage() {
       console.log("[v0] Socket disconnected")
     })
 
-    socket.on("message", (receivedMessage: Message & { sender: Partial<User> }) => {
-      console.log("[v0] Received new message:", receivedMessage)
-      setMessages((prev) => [...prev, receivedMessage]);
-      
-      // If message from new user, add to user list
-      if (!users.find((u) => u.id === receivedMessage.senderId)) {
-        setUsers((prev) => [
-          ...prev,
-          {
-            id: receivedMessage.senderId,
-            username: receivedMessage.sender.username || `User ${receivedMessage.senderId.slice(0, 5)}`,
-            email: receivedMessage.sender.email || '',
-            avatar: receivedMessage.sender.avatar || null,
-            description: null,
-            isOnline: true, // Since they just sent a message
-            lastSeen: new Date().toISOString(),
-            isTyping: false,
-          },
-        ]);
-        refetchUserList(); // Refetch to sync with API if needed
-      }
+   socket.on("message", (receivedMessage: Message & { sender: Partial<User> }) => {
+  console.log("[v0] Received new message:", receivedMessage);
 
-      // If chat is open for this sender, mark as read immediately
-      if (receivedMessage.senderId === receiverId) {
-        socket.emit("markConversationAsRead", { senderId: receivedMessage.senderId });
-        // Optimistically set isRead true (though not displayed for received)
-      }
-    })
+  // Don't process if it's from me (shouldn't happen, but safe)
+  if (receivedMessage.senderId === CURRENT_USER_ID) return;
+
+  setMessages((prev) => [...prev, receivedMessage]);
+
+  // Only add sender to user list if not already there AND not me
+  setUsers((prev) => {
+    if (
+      !prev.find((u) => u.id === receivedMessage.senderId) &&
+      receivedMessage.senderId !== CURRENT_USER_ID // ← Prevent adding self
+    ) {
+      return [
+        ...prev,
+        {
+          id: receivedMessage.senderId,
+          username: receivedMessage.sender.username || `User ${receivedMessage.senderId.slice(0, 5)}`,
+          email: receivedMessage.sender.email || '',
+          avatar: receivedMessage.sender.avatar || null,
+          description: null,
+          isOnline: true,
+          lastSeen: new Date().toISOString(),
+          isTyping: false,
+        },
+      ];
+    }
+    return prev;
+  });
+
+  // If chat is open with this user, mark as read
+  if (receivedMessage.senderId === receiverId) {
+    socket.emit("markConversationAsRead", { senderId: receivedMessage.senderId });
+  }
+});
 
     socket.on("userTyping", ({ userId, isTyping }: { userId: string; isTyping: boolean }) => {
       console.log("[v0] User typing event:", userId, isTyping)
@@ -415,17 +426,39 @@ export default function ChatPage() {
       );
     });
 
-    socket.on("onlineUsers", (onlineUsersList: User[]) => {
-      console.log("[v0] Received online users list:", onlineUsersList);
-      setUsers((prev) =>
-        prev.map((user) => {
-          const onlineUser = onlineUsersList.find((ou) => ou.id === user.id);
-          return onlineUser
-            ? { ...user, isOnline: true, lastSeen: onlineUser.lastSeen }
-            : { ...user, isOnline: false };
-        })
-      );
+socket.on("onlineUsers", (onlineUsersList: User[]) => {
+  setUsers((prev) => {
+    // Filter out current user from incoming list
+    const filteredOnlineUsers = onlineUsersList.filter(u => u.id !== CURRENT_USER_ID);
+
+    const next = [...prev];
+    const userIds = new Set(prev.map(u => u.id));
+
+    for (const ou of filteredOnlineUsers) {
+      if (userIds.has(ou.id)) {
+        const index = next.findIndex(u => u.id === ou.id);
+        next[index] = {
+          ...next[index],
+          isOnline: true,
+          lastSeen: ou.lastSeen,
+          username: ou.username,
+          avatar: ou.avatar,
+        };
+      } else {
+        next.push({
+          ...ou,
+          isTyping: false,
+        });
+      }
+    }
+
+    // Mark others as offline (but keep ones still in filtered list)
+    return next.map(user => {
+      const isStillOnline = filteredOnlineUsers.some(ou => ou.id === user.id);
+      return isStillOnline ? user : { ...user, isOnline: false };
     });
+  });
+});
 
     socket.on("messageSeen", ({ userId }) => {
       console.log(`🛑 User ${userId} Message Seen`);
@@ -639,6 +672,8 @@ export default function ChatPage() {
             All Users ({isLoadingUsers ? "..." : users.length})
           </h3>
         </div>
+
+        
 
         <div className="flex-1 overflow-y-auto px-2">
           {isLoadingUsers ? (

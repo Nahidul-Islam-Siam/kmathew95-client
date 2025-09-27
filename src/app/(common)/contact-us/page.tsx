@@ -4,7 +4,7 @@
 import { useState } from "react";
 import { Button, Form, Input, Typography, Card, Row, Col, Space } from "antd";
 import { EnvironmentOutlined, PhoneOutlined, MailOutlined } from "@ant-design/icons";
-import { useAddContactApiMutation } from "@/redux/service/contactApi";
+import { useAddContactApiMutation, useRemoveSingleContactMutation } from "@/redux/service/contactApi";
 import { toast } from "sonner";
 
 const { Title, Text } = Typography;
@@ -23,6 +23,7 @@ export default function ContactUs() {
   const [loading, setLoading] = useState(false);
 
   const [addContact] = useAddContactApiMutation();
+
 
   const onFinish = async (values: ContactFormValues) => {
     setLoading(true);

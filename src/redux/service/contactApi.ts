@@ -29,10 +29,21 @@ export const contactApi = baseApi.injectEndpoints({
       invalidatesTags: ["Contact"], // Keep only if you have a "Contact" tag in baseApi
     }),
 
+
+    removeSingleContact: builder.mutation({
+      query: (id) => ({
+        url: `/contact-us/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Contact"], // Keep only if you have a "Contact" tag in baseApi
+    }),
+
     getAllContactData: builder.query({
       query: () => "/contact-us",
       providesTags: ["Contact"], // Keep only if you have a "Contact" tag in baseApi
     }),
+
+
 
 
     
@@ -41,6 +52,6 @@ export const contactApi = baseApi.injectEndpoints({
 });
 
 // Export Hook
-export const { useAddContactApiMutation , useGetAllContactDataQuery} = contactApi;
+export const { useAddContactApiMutation , useGetAllContactDataQuery, useRemoveSingleContactMutation} = contactApi;
 
 export default contactApi;

@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 import { Layout, Menu, Spin } from "antd";
 import {
   BookmarkCheck,
+  Contact2Icon,
   CreditCard,
   LayoutDashboard,
   LogOut,
@@ -148,6 +149,12 @@ const AdminLayout = ({ children }: { children: ReactNode }) => {
     //   icon: <BookmarkCheck size={20} />,
     //   label: "Referral",
     // },
+
+    {
+      key: "/admin/contact",
+      icon: <Contact2Icon size={20} />,
+      label: "Contact",
+    },
     {
       key: "/admin/reviews",
       icon: <Star size={20} />,
