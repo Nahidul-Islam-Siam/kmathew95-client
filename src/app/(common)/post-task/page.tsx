@@ -228,8 +228,12 @@ export default function PostTask() {
         deadline: `${values.deadline}T23:59:59.000Z`,
         tags,
         categoryid: selectedCategoryId,
+        subCategoryid: values.jobSubCategory,
         traderId,
       };
+
+      console.log("Post Data:", postData);
+      
 
       // Create FormData    
       const formData = new FormData();

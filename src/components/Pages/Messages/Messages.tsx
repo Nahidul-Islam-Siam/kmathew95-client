@@ -270,17 +270,17 @@ export default function ChatPage() {
    }
   }, []);
 
-  // Handle single user from redirect
+  // // Handle single user from redirect
   // useEffect(() => {
   //   if (singleuser && !singleUserLoading && !singleUserError) {
   //     setUsers((prev) => {
-  //       if (!prev.find((u) => u.id === singleuser.id)) {
+  //       if (!prev.find((u) => u.id === singleuser?.id)) {
   //         return [...prev, {
-  //           id: singleuser.id,
-  //           username: singleuser.username,
-  //           email: singleuser.email,
+  //           id: singleuser?.id,
+  //           username: singleuser?.username,
+  //           email: singleuser?.email,
   //           avatar: singleuser.avatar,
-  //           description: singleuser.description || null,
+  //           description: singleuser?.description || null,
   //           isOnline: false, // Default, will be updated via socket
   //           lastSeen: new Date().toISOString(),
   //           isTyping: false,
@@ -288,7 +288,7 @@ export default function ChatPage() {
   //       }
   //       return prev;
   //     });
-  //     setReceiverId(singleuser.id);
+  //     setReceiverId(singleuser?.id);
   //     localStorage.removeItem("redirectFromMessage");
   //   }
   // }, [singleuser, singleUserLoading, singleUserError]);

@@ -17,6 +17,9 @@ import img from "@/assets/CardImage/image 2.png";
 import { useGetTaskManagementQuery } from "@/redux/service/admin/taskManagemant";
 import { useGetCategoryQuery } from "@/redux/service/admin/category";
 
+// task-management?subCategoryid=&categoryid=68ad19473af9fbf6b9e6b3a9
+// 
+
 // ServiceCard Component
 function ServiceCard({
   id,
@@ -287,6 +290,7 @@ export default function AllServicesPage() {
             The most popular and best-selling services of all time
           </p>
         </div>
+        {/* akdfma;sdkfm'apsdmf'p[asfg] */}
 
         {/* Task List */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
@@ -386,4 +390,4 @@ export default function AllServicesPage() {
       </div>
     </div>
   );
-}
+}  
