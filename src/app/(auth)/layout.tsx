@@ -6,9 +6,9 @@ const Layout = ({ children }: { children: ReactNode }) => {
   return (
     <div className="h-screen flex flex-col">
       {/* If you have a header, place it here */}
-      <div className="flex-1 overflow-y-auto">{children}</div>
+      <div className="flex-1 overflow-y-hidden">{children}</div>
     </div>
   );
 };
 
-export default Layout;
+export default Layout;                  

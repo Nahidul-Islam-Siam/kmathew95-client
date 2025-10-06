@@ -8,6 +8,7 @@ import {
 } from "@/utils/password-validation";
 
 import passImg from "@/assets/img/Forgot password-rafiki 1.png";
+import Link from "next/link";
 
 export interface SetPasswordProps {
   onSubmit?: (passwords: SetPasswordFormData) => void | Promise<void>;
@@ -23,7 +24,7 @@ export interface SetPasswordFormData {
 
 export interface PasswordValidation {
   isValid: boolean;
-  errors: string[];
+  errors: string[];  
 }
 
 export default function SetPassword({
@@ -113,6 +114,8 @@ export default function SetPassword({
         {/* Left side - Illustration */}
         <div className="hidden lg:flex justify-center">
           <div className="relative w-full max-w-md">
+           <Link href="/">
+           
             <Image
               src={passImg}
               alt="Set password illustration showing a person next to a security interface"
@@ -121,6 +124,7 @@ export default function SetPassword({
               className="w-full h-auto"
               priority
             />
+           </Link>
           </div>
         </div>
 

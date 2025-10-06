@@ -23,7 +23,7 @@ const Navbar = () => {
       children: [
         {
           key: "upcomint-events",
-          label: "Upcomming Events",
+          label: "Upcomming Events", 
           href: "/upcomming-events",
         },
         { key: "past-events", label: "Past Events", href: "/past-events" },

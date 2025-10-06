@@ -1,13 +1,18 @@
-import ProfilePage from "@/components/UserDashboard/ProfilePage/ProfilePage";
-import React from "react";
+// app/profile/page.tsx
+"use client"; // Required because it uses state and interacts with modal
 
-const Profile = () => {
+import ProfileContent from "@/components/UserDashboard/UserDashboardPage/Profilecontent";
+import EditProfileModal from "@/components/UserDashboard/UserDashboardPage/UserProfileModal";
+import { useState } from "react";
+
+
+export default function ProfilePage() {
+  const [modalOpen, setModalOpen] = useState(false);
+
   return (
-    <div>
-      <h1 className="text-center font-bold text-xl md:text-4xl text-blue-900">Profile</h1>
-      <ProfilePage />
-    </div>
+    <>
+      <ProfileContent onEditClick={() => setModalOpen(true)} />
+      <EditProfileModal open={modalOpen} onClose={() => setModalOpen(false)} />
+    </>
   );
-};
-
-export default Profile;
+}

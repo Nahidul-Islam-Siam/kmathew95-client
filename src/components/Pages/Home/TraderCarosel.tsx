@@ -22,7 +22,7 @@
 //     return (
 //         <Carousel
 //             opts={{
-//                 align: "start",
+//                 align: "start",  
 //             }}
 //             className="w-full"
 //         >

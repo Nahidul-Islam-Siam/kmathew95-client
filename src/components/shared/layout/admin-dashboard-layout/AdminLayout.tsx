@@ -1,10 +1,12 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import type React from "react";
+import type { ReactNode } from "react";
 
-import { Layout, Menu } from "antd";
+import { Layout, Menu, Spin } from "antd";
 import {
   BookmarkCheck,
+  Contact2Icon,
   CreditCard,
   LayoutDashboard,
   LogOut,
@@ -17,9 +19,9 @@ import {
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
-import { MdAddCircleOutline } from "react-icons/md"; // Re-adding this as per original code
+import { MdAddCircleOutline } from "react-icons/md";
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"; // Using shadcn Avatar
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,17 +29,84 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"; // Using shadcn DropdownMenu
+} from "@/components/ui/dropdown-menu";
+import { useGetUserQuery } from "@/redux/service/userApi";
 
 const { Sider, Content, Header } = Layout;
 
-const AdminLayout = ({ children }: { children: React.ReactNode }) => {
+// Types based on your API response
+interface Admin {
+  fastName: string;
+  lastName: string;
+  userId: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface UserData {
+  id: string;
+  username: string;
+  email: string;
+  role: string;
+  avatar?: string;
+  contactNo: string;
+  description: string;
+  lang: string;
+  isVerified: boolean;
+  createdAt: string;
+  updatedAt: string;
+  admin?: Admin;
+  data?: any;
+}
+
+interface UserApiResponse {
+  success: boolean;
+  message: string;
+  data: UserData;
+  meta: null | unknown;
+  isLoading: boolean;
+  isError: boolean;
+}
+
+const AdminLayout = ({ children }: { children: ReactNode }) => {
   const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
 
+  // Fetch user data
+  const { data: apiResponse, isLoading, isError } = useGetUserQuery<UserApiResponse>();
+
+  // Extract user from response
+  const userData = apiResponse?.data;
+
+  // Fallback values
+  const fallbackName = "User";
+
+  // Extract name parts safely
+  const fastName = userData?.admin?.fastName || "";
+  const lastName = userData?.admin?.lastName || "";
+  const fullName = fastName && lastName
+    ? `${fastName} ${lastName}`
+    : userData?.username || fallbackName;
+
+  const displayName = fullName;
+  const displayEmail = userData?.email || "user@example.com";
+  const avatarUrl = userData?.avatar || null;
+  const role = userData?.role || "USER";
+
+  // Generate initials for fallback avatar
+  const getInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map((part) => part[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
   const handleLogout = () => {
-    console.log("Dummy logout triggered");
+    console.log("Logging out...");
     router.push("/login");
   };
 
@@ -53,20 +122,18 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
     {
       key: "/admin",
       icon: <LayoutDashboard size={20} />,
-      label: "Dashboards",
+      label: "Dashboard",
     },
-    {
-      key: "/admin/tasks-post",
-      icon: <MdAddCircleOutline size={20} />, // Reverted to MdAddCircleOutline
-      label: "Tasks Post",
-    },
+    // {
+    //   key: "/admin/tasks-post",
+    //   icon: <MdAddCircleOutline size={20} />,
+    //   label: "Tasks Post",
+    // },
     {
       key: "/admin/users",
       icon: <User size={20} />,
-      label: "User",
+      label: "Users",
     },
-    
-   
     {
       key: "/admin/wallet",
       icon: <Wallet size={20} />,
@@ -77,10 +144,16 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
       icon: <CreditCard size={20} />,
       label: "Subscription",
     },
+    // {
+    //   key: "/admin/referral",
+    //   icon: <BookmarkCheck size={20} />,
+    //   label: "Referral",
+    // },
+
     {
-      key: "/admin/referral",
-      icon: <BookmarkCheck size={20} />, // Reverted to BookmarkCheck
-      label: "Referral",
+      key: "/admin/contact",
+      icon: <Contact2Icon size={20} />,
+      label: "Contact",
     },
     {
       key: "/admin/reviews",
@@ -98,6 +171,24 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
       label: "Profile",
     },
   ];
+
+  // Optional: Show loading indicator
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <p><Spin size="small" /></p>
+      </div>
+    );
+  }
+
+  // Optional: Handle error
+  if (isError || !userData) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <p className="text-red-500">Failed to load user. Please log in again....</p>
+      </div>
+    );
+  }
 
   return (
     <Layout style={{ minHeight: "100vh" }}>
@@ -122,10 +213,7 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
           {!collapsed && (
             <Link href="/">
               <span className="text-xl font-bold" style={{ color: "#1C2A47" }}>
-                Skill
-         
-                  Switch
-       
+                Skill<span style={{ color: "#E57931" }}>Switch</span>
               </span>
             </Link>
           )}
@@ -134,9 +222,10 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
             style={{ color: "#1C2A47", marginLeft: collapsed ? "auto" : "0" }}
             onClick={() => setCollapsed(!collapsed)}
           >
-            »
+            » 
           </span>
         </div>
+
         {/* Menu */}
         <Menu
           mode="inline"
@@ -147,23 +236,25 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
             paddingTop: 12,
             fontSize: 15,
             fontWeight: 500,
-            flexGrow: 1, 
+            flexGrow: 1,
           }}
           items={menuItems}
-          className="admin-menu" 
+          className="admin-menu"
         />
-        {/* Logout */}
+
+        {/* Logout Section */}
         <div className="p-4" style={{ marginTop: "auto" }}>
           <div
             onClick={handleLogout}
             className="flex items-center gap-2 cursor-pointer font-medium text-[15px]"
-            style={{ color: "#ef4444" }} // Tailwind red-500
+            style={{ color: "#ef4444" }}
           >
             <LogOut size={20} />
             {!collapsed && <span>Log out</span>}
           </div>
         </div>
       </Sider>
+
       {/* Main Content */}
       <Layout>
         <Header
@@ -177,43 +268,45 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
           }}
         >
           <div className="flex items-center justify-between w-full">
+            {/* Welcome Text */}
             <h1
               className="hidden md:block text-lg font-semibold"
               style={{ color: "#092c4c" }}
             >
-              Welcome back, Alex Grinder
+              Welcome back, <span className="capitalize">{fastName.toLowerCase()}</span>
             </h1>
+
+            {/* User Dropdown */}
             <div className="flex justify-center items-center gap-4">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <div className="flex items-center gap-2 cursor-pointer">
-                    <Avatar className="h-10 w-10">
-                      <AvatarImage
-                        src="/placeholder.svg?height=40&width=40"
-                        alt="User Avatar"
-                      />
-                      <AvatarFallback>AG</AvatarFallback>
+                    <Avatar className="h-10 w-10 border border-gray-200">
+                      <AvatarImage src={avatarUrl || undefined} alt={displayName} />
+                      <AvatarFallback>{getInitials(displayName)}</AvatarFallback>
                     </Avatar>
                     <div className="flex flex-col items-start justify-center">
                       <span
                         className="text-sm font-medium"
                         style={{ color: "#374151" }}
                       >
-                        Alex Grinder
+                        {displayName}
                       </span>
-                      <span className="text-xs" style={{ color: "#6b7280" }}>
-                        User
+                      <span
+                        className="text-xs"
+                        style={{ color: "#6b7280" }}
+                      >
+                        {role}
                       </span>
                     </div>
                   </div>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem>Profile</DropdownMenuItem>
-                  <DropdownMenuItem>Settings</DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout}>
+                <DropdownMenuContent align="end" className="w-56">
+     
+                  <DropdownMenuItem
+                    onClick={handleLogout}
+                    className="text-red-600 focus:text-red-600"
+                  >
                     Log out
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -221,12 +314,13 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
             </div>
           </div>
         </Header>
+
         <Content
           style={{
             margin: 0,
             height: "calc(100vh - 64px)",
             overflowY: "auto",
-            padding: 24,
+            padding: "24px",
             background: "#f9fafb", // Tailwind gray-50
           }}
         >

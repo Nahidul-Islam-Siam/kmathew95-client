@@ -9,3 +9,4 @@ const layout = ({ children }: AdminLayoutProps) => {
 };
 
 export default layout;
+   

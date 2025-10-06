@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import type React from "react";
@@ -7,6 +8,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, CheckCircle, AlertCircle } from "lucide-react";
+import { useChangePasswordMutation } from "@/redux/service/auth/authApi";
+import { useSelector } from "react-redux";
+import { RootState } from "@/redux/store";
+import { toast } from "sonner";
 
 export default function ChangePassword() {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
@@ -17,6 +22,11 @@ export default function ChangePassword() {
     type: "success" | "error";
     text: string;
   } | null>(null);
+
+  // Get user ID from Redux
+  const id = useSelector((state: RootState) => state?.auth?.user?.id);
+
+  const [changePassword] = useChangePasswordMutation();
 
   const [formData, setFormData] = useState({
     currentPassword: "",
@@ -35,9 +45,7 @@ export default function ChangePassword() {
 
     if (!formData.newPassword) {
       newErrors.newPassword = "New password is required";
-    } else if (formData.newPassword.length < 8) {
-      newErrors.newPassword = "Password must be at least 8 characters";
-    }
+    } 
 
     if (!formData.confirmPassword) {
       newErrors.confirmPassword = "Please confirm your new password";
@@ -63,18 +71,29 @@ export default function ChangePassword() {
     setMessage(null);
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      setMessage({ type: "success", text: "Password changed successfully!" });
-      setFormData({
-        currentPassword: "",
-        newPassword: "",
-        confirmPassword: "",
-      });
-    } catch {
-      setMessage({
-        type: "error",
-        text: "Failed to change password. Please try again.",
-      });
+      // ✅ Prepare payload to match backend
+      const payload = {
+        id,
+        prevPass: formData.currentPassword,
+        newPass: formData.newPassword,
+      };
+
+      // ✅ Dispatch mutation
+      const res = await changePassword(payload).unwrap();
+
+      if (res.success) {
+        toast.success(res.message || "Password changed successfully!");
+        setFormData({
+          currentPassword: "",
+          newPassword: "",
+          confirmPassword: "",
+        });
+      } else {
+        toast.error(res.message || "Failed to change password.");
+      }
+    } catch (error: any) {
+      toast.error("An error occurred. Please try again.");
+      console.error("Change Password Error:", error);
     } finally {
       setIsLoading(false);
     }
@@ -184,7 +203,7 @@ export default function ChangePassword() {
                   </p>
                 )}
                 <p className="text-xs text-gray-500">
-                  Must be at least 8 characters long
+                  Must be at least 6 characters long
                 </p>
               </div>
 

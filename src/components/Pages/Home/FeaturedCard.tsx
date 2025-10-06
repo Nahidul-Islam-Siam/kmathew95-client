@@ -16,4 +16,4 @@ export default function FeatureCard({ icon: Icon, title, description }: FeatureC
       <p className="text-sm md:text-base text-gray-600 leading-relaxed">{description}</p>
     </div>
   );
-}
+}    

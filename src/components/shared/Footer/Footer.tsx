@@ -19,7 +19,7 @@ const footerLinks = {
   support: [
     { name: "Help & Support", href: "/contact-us" },
     { name: "Trust & Safety", href: "/trust-safety" },
-    { name: "FAQ", href: "/faq" },
+    { name: "FAQ", href: "/faq" }, 
     { name: "Contact Us", href: "/contact-us" },
   ],
   legal: [

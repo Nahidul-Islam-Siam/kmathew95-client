@@ -34,7 +34,7 @@ export default function AddCategoryForm() {
     }
 
     if (!iconList[0]?.originFileObj) {
-      toast.error("Please select an icon.");
+      toast.error("Please select an icon."); 
       return;
     }
 

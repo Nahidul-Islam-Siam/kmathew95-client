@@ -24,7 +24,7 @@ export default function PricingPage() {
           >
             Plans
           </Button>
-          <Button
+          {/* <Button
             onClick={() => setActiveTab("boosts")}
             className={`px-16 py-3 rounded-md font-medium transition-all ${
               activeTab === "boosts"
@@ -33,7 +33,7 @@ export default function PricingPage() {
             }`}
           >
             Boosts
-          </Button>
+          </Button> */}
         </div>
       </div>
 
@@ -41,7 +41,7 @@ export default function PricingPage() {
       <div className="">
         {activeTab === "plans" && <SubscriptionSection />}
 
-        {activeTab === "boosts" && <BoostPage />}
+        {/* {activeTab === "boosts" && <BoostPage />} */}
       </div>
     </div>
   );

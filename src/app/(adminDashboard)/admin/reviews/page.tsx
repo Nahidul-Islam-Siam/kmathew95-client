@@ -1,205 +1,141 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-"use client"
+"use client";
 
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Search, Star } from "lucide-react"
-import { debounce } from "lodash"
-import { useEffect, useMemo, useState } from "react"
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Search, Star } from "lucide-react";
+import { debounce } from "lodash";
+import { useEffect, useMemo, useState } from "react";
+import { useGetPublicReviewsQuery } from "@/redux/service/admin/review";
 
-interface Review {
-  id: string
-  userName: string
-  reviewTitle: string
-  reviewText: string
-  date: string
-  rating: number
-  isPublished: boolean
+// === Types (Optional: move to types/review.ts) ===
+interface ReviewProvider {
+  fastName: string;
+  lastName: string;
+}
+
+interface Task {
+  title: string;
+}
+
+interface ApiReview {
+  id: string;
+  comment: string;
+  rating: number;
+  createdAt: string;
+  reviewProvider: ReviewProvider | null;
+  task: Task | null;
+}
+
+interface ApiResponseData {
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPage: number;
+  };
+  data: ApiReview[];
+}
+
+interface ApiResponse<T> {
+  success: boolean;
+  message: string;
+  data: T;
+  meta: null | unknown;
 }
 
 export default function Reviews() {
-  const [searchText, setSearchText] = useState("")
-  const [debouncedSearch, setDebouncedSearch] = useState(searchText)
-  const [currentPage, setCurrentPage] = useState(1)
-  const pageSize = 10
-  const [reviewsData, setReviewsData] = useState<{
-    data: Review[]
-    total: number
-  } | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const [searchText, setSearchText] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
 
-  // Fake API
-  useEffect(() => {
-    const fetchReviews = async () => {
-      setIsLoading(true)
-      await new Promise((res) => setTimeout(res, 500))
+  // Fetch real reviews
+  const {  data:apiResponse, isLoading: isApiLoading } = useGetPublicReviewsQuery();
 
-      const allReviews: Review[] = [
-        {
-          id: "1",
-          userName: "Alena Gouse",
-          reviewTitle: "Psum elit viverra...",
-          reviewText: "We were extremely...",
-          date: "May 19, 2025",
-          rating: 5.0,
-          isPublished: true,
-        },
-        {
-          id: "2",
-          userName: "Alena Gouse",
-          reviewTitle: "Psum elit viverra...",
-          reviewText: "We were extremely...",
-          date: "May 19, 2025",
-          rating: 5.0,
-          isPublished: true,
-        },
-        {
-          id: "3",
-          userName: "Alena Gouse",
-          reviewTitle: "Psum elit viverra...",
-          reviewText: "We were extremely...",
-          date: "May 19, 2025",
-          rating: 5.0,
-          isPublished: true,
-        },
-        {
-          id: "4",
-          userName: "Alena Gouse",
-          reviewTitle: "Psum elit viverra...",
-          reviewText: "We were extremely...",
-          date: "May 19, 2025",
-          rating: 5.0,
-          isPublished: true,
-        },
-        {
-          id: "5",
-          userName: "Alena Gouse",
-          reviewTitle: "Psum elit viverra...",
-          reviewText: "We were extremely...",
-          date: "May 19, 2025",
-          rating: 5.0,
-          isPublished: true,
-        },
-        {
-          id: "6",
-          userName: "Alena Gouse",
-          reviewTitle: "Psum elit viverra...",
-          reviewText: "We were extremely...",
-          date: "May 19, 2025",
-          rating: 5.0,
-          isPublished: true,
-        },
-        {
-          id: "7",
-          userName: "Alena Gouse",
-          reviewTitle: "Psum elit viverra...",
-          reviewText: "We were extremely...",
-          date: "May 19, 2025",
-          rating: 5.0,
-          isPublished: true,
-        },
-        {
-          id: "8",
-          userName: "Alena Gouse",
-          reviewTitle: "Psum elit viverra...",
-          reviewText: "We were extremely...",
-          date: "May 19, 2025",
-          rating: 5.0,
-          isPublished: true,
-        },
-        {
-          id: "9",
-          userName: "Alena Gouse",
-          reviewTitle: "Psum elit viverra...",
-          reviewText: "We were extremely...",
-          date: "May 19, 2025",
-          rating: 5.0,
-          isPublished: true,
-        },
-        {
-          id: "10",
-          userName: "Alena Gouse",
-          reviewTitle: "Psum elit viverra...",
-          reviewText: "We were extremely...",
-          date: "May 19, 2025",
-          rating: 5.0,
-          isPublished: true,
-        },
-        // Add more reviews for pagination
-        {
-          id: "11",
-          userName: "John Smith",
-          reviewTitle: "Amazing service quality...",
-          reviewText: "The team delivered exceptional...",
-          date: "May 18, 2025",
-          rating: 4.8,
-          isPublished: true,
-        },
-        {
-          id: "12",
-          userName: "Jane Doe",
-          reviewTitle: "Great experience overall...",
-          reviewText: "I was impressed with the...",
-          date: "May 17, 2025",
-          rating: 4.9,
-          isPublished: false,
-        },
-        {
-          id: "13",
-          userName: "Mike Johnson",
-          reviewTitle: "Professional and reliable...",
-          reviewText: "Highly recommend their services...",
-          date: "May 16, 2025",
-          rating: 4.7,
-          isPublished: true,
-        },
-      ]
+  // Extract all reviews from API
+  const allReviewsFromApi = apiResponse?.data?.data || [];
 
-      const filtered = allReviews.filter(
-        (review) =>
-          review.userName.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-          review.reviewTitle.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-          review.reviewText.toLowerCase().includes(debouncedSearch.toLowerCase()),
-      )
+  // Map API data to display format
+  const mappedReviews = allReviewsFromApi.map((review) => {
+    const userName = review.reviewProvider
+      ? `${review.reviewProvider.fastName} ${review.reviewProvider.lastName}`
+      : "Unknown User";
 
-      const paginated = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+    const reviewTitle = review.task?.title || "No Task Title";
+    const reviewText = review.comment;
+    const rating = review.rating;
+    const date = new Date(review.createdAt).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
 
-      setReviewsData({ data: paginated, total: filtered.length })
-      setIsLoading(false)
-    }
+    return {
+      id: review.id,
+      userName,
+      reviewTitle,
+      reviewText,
+      rating,
+      date,
+      isPublished: true, // Assuming all fetched reviews are public/published
+    };
+  });
 
-    fetchReviews()
-  }, [debouncedSearch, currentPage, pageSize])
+  // Filter reviews by search term
+  const filteredReviews = useMemo(() => {
+    return mappedReviews.filter(
+      (review) =>
+        review.userName.toLowerCase().includes(searchText.toLowerCase()) ||
+        review.reviewTitle.toLowerCase().includes(searchText.toLowerCase()) ||
+        review.reviewText.toLowerCase().includes(searchText.toLowerCase())
+    );
+  }, [mappedReviews, searchText]);
 
+  // Paginate filtered results
+  const totalPages = Math.ceil(filteredReviews.length / pageSize);
+  const paginatedReviews = filteredReviews.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
+
+  // Debounced search
   const debouncedSetSearch = useMemo(
     () =>
-      debounce((val: string) => {
-        setDebouncedSearch(val)
+      debounce((value: string) => {
+        setSearchText(value);
+        setCurrentPage(1); // Reset to first page on new search
       }, 400),
-    [],
-  )
+    []
+  );
 
   useEffect(() => {
-    debouncedSetSearch(searchText)
-  }, [searchText, debouncedSetSearch])
+    return () => {
+      debouncedSetSearch.cancel(); // Cleanup
+    };
+  }, [debouncedSetSearch]);
 
-  const reviews = reviewsData?.data || []
-  const total = reviewsData?.total || 0
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    debouncedSetSearch(e.target.value);
+  };
 
+  // Toggle publish status (frontend-only toggle for demo)
+  const [publishedStatus, setPublishedStatus] = useState<Record<string, boolean>>({});
   const togglePublishStatus = (id: string) => {
-    setReviewsData((prev) => {
-      if (!prev) return prev
+    setPublishedStatus((prev) => ({
+      ...prev,
+      [id]: !prev[id],
+    }));
+  };
 
-      const updatedData = prev.data.map((review) =>
-        review.id === id ? { ...review, isPublished: !review.isPublished } : review,
-      )
-
-      return { ...prev, data: updatedData }
-    })
-  }
-
-  const totalPages = Math.ceil(total / pageSize)
+  const isLoading = isApiLoading;
 
   return (
     <div className="bg-white w-full">
@@ -209,12 +145,9 @@ export default function Reviews() {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           <Input
-            placeholder="Search orders..."
+            placeholder="Search reviews..."
             value={searchText}
-            onChange={(e) => {
-              setSearchText(e.target.value)
-              setCurrentPage(1)
-            }}
+            onChange={handleSearchChange}
             className="pl-10 w-64 border-gray-200"
           />
         </div>
@@ -237,38 +170,46 @@ export default function Reviews() {
             {isLoading ? (
               <TableRow>
                 <TableCell colSpan={6} className="text-center h-24">
-                  Loading...
+                  Loading reviews...
                 </TableCell>
               </TableRow>
-            ) : reviews.length === 0 ? (
+            ) : paginatedReviews.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="text-center h-24">
-                  No reviews found.
+                  No reviews found matching your search.
                 </TableCell>
               </TableRow>
             ) : (
-              reviews.map((review, index) => (
-                <TableRow key={review.id} className={index % 2 === 0 ? "bg-gray-50" : "bg-white"}>
+              paginatedReviews.map((review) => (
+                <TableRow key={review.id} className="hover:bg-gray-50">
                   <TableCell className="text-gray-700">{review.userName}</TableCell>
-                  <TableCell className="text-gray-700">{review.reviewTitle}</TableCell>
-                  <TableCell className="text-gray-700">{review.reviewText}</TableCell>
+                  <TableCell className="text-gray-700 font-medium">{review.reviewTitle}</TableCell>
+                  <TableCell className="text-gray-600 text-sm max-w-md truncate">
+                    {review.reviewText}
+                  </TableCell>
                   <TableCell className="text-gray-700">{review.date}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
                       <Star className="w-4 h-4 fill-orange-400 text-orange-400" />
-                      <span className="text-sm font-medium text-gray-700">{review.rating.toFixed(1)}</span>
+                      <span className="text-sm font-medium text-gray-700">
+                        {review.rating.toFixed(1)}
+                      </span>
                     </div>
                   </TableCell>
                   <TableCell>
                     <button
                       onClick={() => togglePublishStatus(review.id)}
                       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${
-                        review.isPublished ? "bg-green-500" : "bg-gray-300"
+                        publishedStatus[review.id] ?? review.isPublished
+                          ? "bg-green-500"
+                          : "bg-gray-300"
                       }`}
                     >
                       <span
                         className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                          review.isPublished ? "translate-x-6" : "translate-x-1"
+                          publishedStatus[review.id] ?? review.isPublished
+                            ? "translate-x-6"
+                            : "translate-x-1"
                         }`}
                       />
                     </button>
@@ -281,48 +222,53 @@ export default function Reviews() {
       </div>
 
       {/* Pagination */}
-      <div className="flex justify-center items-center py-6 border-t bg-gray-50">
-        <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-            disabled={currentPage === 1}
-            className="w-8 h-8"
-          >
-            ‹
-          </Button>
+      {!isLoading && filteredReviews.length > 0 && (
+        <div className="flex justify-center items-center py-6 border-t bg-gray-50">
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+              disabled={currentPage === 1}
+              className="w-8 h-8"
+            >
+              ‹
+            </Button>
 
-          {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-            const pageNumber = i + 1
-            return (
-              <Button
-                key={pageNumber}
-                variant={currentPage === pageNumber ? "default" : "ghost"}
-                size="icon"
-                className={`w-8 h-8 ${
-                  currentPage === pageNumber
-                    ? "bg-slate-700 text-white hover:bg-slate-800"
-                    : "text-gray-600 hover:bg-gray-100"
-                }`}
-                onClick={() => setCurrentPage(pageNumber)}
-              >
-                {pageNumber}
-              </Button>
-            )
-          })}
+            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+              const startPage = Math.max(1, currentPage - 2);
+              const pageNumber = startPage + i;
+              if (pageNumber > totalPages) return null;
 
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-            disabled={currentPage >= totalPages}
-            className="w-8 h-8"
-          >
-            ›
-          </Button>
+              return (
+                <Button
+                  key={pageNumber}
+                  variant={currentPage === pageNumber ? "default" : "ghost"}
+                  size="icon"
+                  className={`w-8 h-8 ${
+                    currentPage === pageNumber
+                      ? "bg-slate-700 text-white hover:bg-slate-800"
+                      : "text-gray-600 hover:bg-gray-100"
+                  }`}
+                  onClick={() => setCurrentPage(pageNumber)}
+                >
+                  {pageNumber}
+                </Button>
+              );
+            })}
+
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+              disabled={currentPage >= totalPages}
+              className="w-8 h-8"
+            >
+              ›
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
-  )
+  );
 }

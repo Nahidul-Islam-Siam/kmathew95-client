@@ -27,8 +27,7 @@ import { useGetCategoryQuery } from "@/redux/service/admin/category";
 import { useAddTaskManagementMutation } from "@/redux/service/admin/taskManagemant";
 import Image from "next/image";
 import { toast } from "sonner";
-import { RootState } from "@/redux/store";
-import { useSelector } from "react-redux";
+
 import Swal from "sweetalert2";
 import { useGetMeQuery } from "@/redux/service/auth/authApi";
 
@@ -44,7 +43,7 @@ interface SubCategory {
 interface Category {
   id: string;
   name: string;
-  SubCategory?: SubCategory[];
+  subCategory?: SubCategory[];
 }
 
 interface CategoryResponse {
@@ -109,7 +108,7 @@ export default function PostTask() {
     const category = categoryOptions.find(
       (cat: any) => cat.id === selectedCategoryId
     );
-    return category?.SubCategory || [];
+    return category?.subCategory || [];
   }, [selectedCategoryId, categoryOptions]);
 
   // Handle Category Change
@@ -229,8 +228,12 @@ export default function PostTask() {
         deadline: `${values.deadline}T23:59:59.000Z`,
         tags,
         categoryid: selectedCategoryId,
+        subCategoryid: values.jobSubCategory,
         traderId,
       };
+
+      console.log("Post Data:", postData);
+      
 
       // Create FormData    
       const formData = new FormData();
